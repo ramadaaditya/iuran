@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.KasKita" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+    </style>
+
+    <style name="Theme.App.Starting.Splash" parent="Theme.App.Starting">
+<!--        <item name="windowSplashScreenAnimatedIcon">@drawable/logos</item>-->
+        <item name="windowSplashScreenBackground">@color/black</item>
+        <item name="postSplashScreenTheme">@style/Theme.KasKita</item>
+        <item name="android:windowBackground">@drawable/splashscreen</item>
+    </style>
+</resources>

@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramstudio.kaskita.core.utils.AuthRepository
+import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
 import com.ramstudio.kaskita.core.utils.AuthResponse
 import com.ramstudio.kaskita.core.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,7 +37,7 @@ sealed interface SignUpUiEvent {
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepositoryImpl: AuthRepositoryImpl
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignUpUiState())
@@ -75,7 +75,7 @@ class SignUpViewModel @Inject constructor(
         viewModelScope.launch {
             Log.d("LOGIN_FLOW", "Mulai login dari ViewModel")
 
-            authRepository.signInCredentialManager(activityContext)
+            authRepositoryImpl.signInCredentialManager(activityContext)
                 .collect { result ->
                     when (result) {
                         is AuthResponse.Success -> {
@@ -94,7 +94,11 @@ class SignUpViewModel @Inject constructor(
 
     fun signUpWithEmail() {
         viewModelScope.launch {
-            authRepository.signUpWithEmail(_uiState.value.email, _uiState.value.password)
+            authRepositoryImpl.signUp(
+                _uiState.value.email,
+                _uiState.value.password,
+                _uiState.value.fullName
+            )
                 .collect { result ->
                     when (result) {
                         is Result.Success -> {

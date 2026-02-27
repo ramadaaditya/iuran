@@ -1,22 +1,30 @@
 package com.ramstudio.kaskita
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed interface AuthState {
+    data object Loading : AuthState
+    data object LoggedIn : AuthState
+    data object LoggedOut : AuthState
+}
+
+
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val supabase: SupabaseClient
+    private val repository: AuthRepository
 ) : ViewModel() {
-    private val _isUserLoggedIn = MutableStateFlow(false)
-    var isUserLoggedIn = _isUserLoggedIn.asStateFlow()
+
+    private val _sessionStatus = MutableStateFlow<AuthState>(AuthState.Loading)
+    val sessionStatus = _sessionStatus.asStateFlow()
 
     init {
         checkSession()
@@ -24,32 +32,34 @@ class MainViewModel @Inject constructor(
 
     private fun checkSession() {
         viewModelScope.launch {
-            supabase.auth.sessionStatus.collect { status ->
+            repository.sessionStatus.collect { status ->
                 when (status) {
                     is SessionStatus.Authenticated -> {
                         val user = status.session.user
-                        _isUserLoggedIn.value = true
+                        _sessionStatus.value = AuthState.LoggedIn
 
-                        android.util.Log.d(
+                        Log.d(
                             "AUTH_VM",
                             "Authenticated ✅ userId=${user?.id}, email=${user?.email}"
                         )
                     }
 
                     is SessionStatus.NotAuthenticated -> {
-                        _isUserLoggedIn.value = false
-                        android.util.Log.d("AUTH_VM", "Not authenticated ❌")
+                        _sessionStatus.value = AuthState.LoggedOut
+                        Log.d("AUTH_VM", "Not authenticated ❌")
                     }
 
                     SessionStatus.Initializing -> {
-                        _isUserLoggedIn.value = false
-                        android.util.Log.d("AUTH_VM", "Auth loading ⏳")
+                        _sessionStatus.value = AuthState.Loading
+                        Log.d("AUTH_VM", "Auth loading ⏳")
                     }
 
-                    else -> {}
+                    is SessionStatus.RefreshFailure -> {
+                        _sessionStatus.value = AuthState.LoggedOut
+                        Log.d("AUTH_VM", "Session expired ❗")
+                    }
                 }
             }
         }
     }
-
 }

@@ -1,8 +1,8 @@
-package com.ramstudio.kaskita.presentation
+package com.ramstudio.kaskita.presentation.community
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramstudio.kaskita.domain.model.DashboardUiState
+import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.Result
 import com.ramstudio.kaskita.domain.repository.ICommunityRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,13 +13,33 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class DashboardUiState(
+    val communities: List<Community> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
+
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
     private val repository: ICommunityRepository
 ) : ViewModel() {
-    // Backing property untuk state
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    init {
+        observeCommunities()
+    }
+
+    private fun observeCommunities() {
+        viewModelScope.launch {
+            repository.getAllCommunity().collect { communities ->
+                _uiState.update {
+                    it.copy(communities = communities)
+                }
+            }
+        }
+    }
 
     fun createCommunity(name: String, desc: String) {
         if (name.isBlank()) {
@@ -37,13 +57,13 @@ class CommunityViewModel @Inject constructor(
             }
 
             when (val result = repository.createCommunity(name, desc)) {
-                is com.ramstudio.kaskita.domain.model.Result.Success -> {
+                is Result.Success -> {
                     _uiState.update {
                         it.copy(isLoading = false, successMessage = result.data)
                     }
                 }
 
-                is com.ramstudio.kaskita.domain.model.Result.Error -> {
+                is Result.Error -> {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -52,8 +72,7 @@ class CommunityViewModel @Inject constructor(
                     }
                 }
 
-                is com.ramstudio.kaskita.domain.model.Result.Loading -> { /* Handled by isLoading flag */
-                }
+                is Result.Loading -> {}
             }
         }
     }

@@ -2,14 +2,43 @@ package com.ramstudio.kaskita.core.navigation
 
 import kotlinx.serialization.Serializable
 
-sealed class RoutingNames {
+
+sealed interface RootGraph {
+    data object AuthGraph : RootGraph
+    data object MainGraph : RootGraph
+}
+
+sealed class ScreenRoute {
 
     @Serializable
-    object SignInRoute : RoutingNames()
+    object SignInRoute : ScreenRoute()
 
     @Serializable
-    object SignUpRoute : RoutingNames()
+    object SignUpRoute : ScreenRoute()
 
     @Serializable
-    object DashboardRoute : RoutingNames()
+    object DashboardRoute : ScreenRoute()
+
+
+    @Serializable
+    object Community : ScreenRoute()
+
+
+    @Serializable
+    data class DetailCommunity(val communityId: String) : ScreenRoute()
+
+    @Serializable
+    object Transaction : ScreenRoute()
+
+    @Serializable
+    object Settings : ScreenRoute()
+
+    @Serializable
+    object Splash : ScreenRoute()
+
+    @Serializable
+    object AddTransactions : ScreenRoute()
+
+    @Serializable
+    data class DetailTransaction(val id: String) : ScreenRoute()
 }

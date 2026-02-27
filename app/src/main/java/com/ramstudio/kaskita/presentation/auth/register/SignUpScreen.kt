@@ -1,6 +1,5 @@
 package com.ramstudio.kaskita.presentation.auth.register
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,13 +18,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices.PIXEL_5
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,11 +47,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.ui.theme.KasKitaTheme
-import com.ramstudio.kaskita.ui.theme.black
-import com.ramstudio.kaskita.ui.theme.darkPurple
-import com.ramstudio.kaskita.ui.theme.purple
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+// --- Tema Warna Selaras ---
+val BgColor = Color(0xFFFBFCFD)
+val PrimaryGreen = Color(0xFF00BFA5)
+val TextDark = Color(0xFF1A1A1A)
+val TextGrey = Color(0xFF757575)
+val LightGreenBg = Color(0xFFE0F7FA)
+
 @Composable
 fun SignUpScreen(
     onNavigateSignIn: () -> Unit,
@@ -59,6 +62,7 @@ fun SignUpScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(viewModel.uiEvent) {
         viewModel.uiEvent.collect { event ->
             when (event) {
@@ -67,15 +71,17 @@ fun SignUpScreen(
             }
         }
     }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) {
+        containerColor = BgColor // Set background Scaffold
+    ) { paddingValues ->
         SignUpContent(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.padding(paddingValues),
             uiState = uiState,
-            onFullNameChange = { it -> viewModel.onFullNameChange(it) },
-            onEmailChange = { it -> viewModel.onEmailChange(it) },
-            onPasswordChange = { it -> viewModel.onPasswordChange(it) },
+            onFullNameChange = { viewModel.onFullNameChange(it) },
+            onEmailChange = { viewModel.onEmailChange(it) },
+            onPasswordChange = { viewModel.onPasswordChange(it) },
             onSignUpClick = { viewModel.signUpWithEmail() },
             navigateSignIn = onNavigateSignIn
         )
@@ -95,106 +101,81 @@ fun SignUpContent(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(black),
+            .background(BgColor),
         contentAlignment = Alignment.TopCenter
     ) {
-        Gradient()
+        LightGradient()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .padding(top = 120.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             RegisterHeader()
-            Spacer(modifier = Modifier.height(40.dp))
-//            Row(
-//                verticalAlignment = Alignment.CenterVertically,
-//                modifier = Modifier.padding(vertical = 30.dp)
-//            ) {
-//                Box(
-//                    modifier = Modifier
-//                        .weight(1f)
-//                        .height(1.dp)
-//                        .background(Color.White.copy(alpha = 0.2f))
-//                )
-//
-//                Text(
-//                    text = "Or",
-//                    color = Color.White.copy(alpha = 0.7f),
-//                    modifier = Modifier.padding(horizontal = 10.dp)
-//                )
-//
-//                Box(
-//                    modifier = Modifier
-//                        .weight(1f)
-//                        .height(1.dp)
-//                        .background(Color.White.copy(alpha = 0.2f))
-//                )
-//            }
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "Full Name",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = TextDark,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium
                 )
-                Spacer(Modifier.height(4.dp))
-                TextField(
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = uiState.fullName,
                     onValueChange = onFullNameChange,
                     placeholder = {
                         Text(
                             text = "Ramada Aditya",
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color.White,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = darkPurple,
-                        unfocusedContainerColor = darkPurple
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = PrimaryGreen,
+                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
+                        focusedTextColor = TextDark,
+                        unfocusedTextColor = TextDark,
+                        cursorColor = PrimaryGreen
                     )
                 )
             }
             Spacer(Modifier.height(20.dp))
 
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "Email",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = TextDark,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                TextField(
+                OutlinedTextField(
                     value = uiState.email,
                     onValueChange = onEmailChange,
                     placeholder = {
                         Text(
                             text = "john.doe@example.com",
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color.White,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = darkPurple,
-                        unfocusedContainerColor = darkPurple
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = PrimaryGreen,
+                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
+                        focusedTextColor = TextDark,
+                        unfocusedTextColor = TextDark,
+                        cursorColor = PrimaryGreen
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -202,49 +183,52 @@ fun SignUpContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "Password",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = TextDark,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                TextField(
+                OutlinedTextField(
                     value = uiState.password,
                     onValueChange = onPasswordChange,
                     placeholder = {
                         Text(
                             text = "Enter your password",
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
                     visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = darkPurple,
-                        unfocusedContainerColor = darkPurple,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = PrimaryGreen,
+                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
+                        focusedTextColor = TextDark,
+                        unfocusedTextColor = TextDark,
+                        cursorColor = PrimaryGreen
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(35.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = onSignUpClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
+                    containerColor = PrimaryGreen,
+                    disabledContainerColor = PrimaryGreen.copy(alpha = 0.5f)
                 ),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
@@ -256,23 +240,29 @@ fun SignUpContent(
                 } else {
                     Text(
                         text = "Sign up",
-                        color = black,
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(
-                onClick = navigateSignIn
-            ) {
+            // Tambahan: Tombol Google Sign In yang sudah disesuaikan
+            // Uncomment dan gunakan jika diperlukan
+            /*
+            GoogleSignInButton(onClick = { /* TODO: Handle Google Sign In */ })
+            Spacer(modifier = Modifier.height(16.dp))
+            */
+
+            TextButton(onClick = navigateSignIn) {
                 Text(
                     text = buildAnnotatedString {
                         withStyle(
                             style = SpanStyle(
-                                fontWeight = FontWeight.Light,
-                                color = Color.White.copy(alpha = 0.8f)
+                                fontWeight = FontWeight.Normal,
+                                color = TextGrey
                             )
                         ) {
                             append("Already have an account? ")
@@ -281,7 +271,7 @@ fun SignUpContent(
                         withStyle(
                             style = SpanStyle(
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = PrimaryGreen
                             )
                         ) {
                             append("Log in")
@@ -296,16 +286,19 @@ fun SignUpContent(
 @Composable
 fun RegisterHeader() {
     Text(
-        text = "Create An Account",
-        style = MaterialTheme.typography.titleLarge,
-        color = Color.White,
-        fontWeight = FontWeight.Bold
+        text = "Create Account",
+        style = MaterialTheme.typography.headlineLarge,
+        color = TextDark,
+        fontWeight = FontWeight.ExtraBold,
+        modifier = Modifier.fillMaxWidth()
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Enter your personal data to create an account",
+        text = "Join your community and start tracking you cash flow with ease",
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White
+        color = TextGrey,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
     )
 }
 
@@ -313,27 +306,33 @@ fun RegisterHeader() {
 fun GoogleSignInButton(onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = TextDark
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
     ) {
+        // Pastikan Anda memiliki icon Google (ic_google) di res/drawable
         Image(
             painter = painterResource(R.drawable.ic_google),
-            contentDescription = null,
+            contentDescription = "Google Sign In",
             modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Text(
             text = "Sign in with Google",
-            color = Color.White,
-            modifier = Modifier.padding(vertical = 4.dp)
+            fontWeight = FontWeight.Medium
         )
     }
 }
 
-
+// Gradient baru untuk tema terang
 @Composable
-fun Gradient() {
+fun LightGradient() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -341,9 +340,8 @@ fun Gradient() {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        purple,
-                        darkPurple,
-                        black
+                        LightGreenBg.copy(alpha = 0.6f),
+                        BgColor // Membaur dengan background utama
                     )
                 )
             )
@@ -353,12 +351,12 @@ fun Gradient() {
 @Preview(showBackground = true, device = PIXEL_5)
 @Composable
 private fun SignUpScreenPreview() {
-    KasKitaTheme() {
+    KasKitaTheme {
         SignUpContent(
             uiState = SignUpUiState(
                 email = "ramadaaditya100@gmail.com",
                 fullName = "Ramada Aditya",
-                password = "Anjayy",
+                password = "Password123",
             ),
             onEmailChange = {},
             onPasswordChange = {},

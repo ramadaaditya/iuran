@@ -11,88 +11,96 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.ramstudio.kaskita.domain.model.ProfileDto
+import com.ramstudio.kaskita.domain.model.User
+import com.ramstudio.kaskita.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
-import io.github.jan.supabase.auth.status.SessionSource
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.security.MessageDigest
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 
 sealed interface AuthResponse {
     data object Success : AuthResponse
     data class Error(val message: String?) : AuthResponse
 }
 
-class AuthRepository @Inject constructor(
+
+@Singleton
+class AuthRepositoryImpl @Inject constructor(
     private val supabase: SupabaseClient
-) {
-    suspend fun authSession() {
-        supabase.auth.sessionStatus.collect {
-            when (it) {
-                is SessionStatus.Authenticated -> {
-                    println("Received new authenticated session.")
+) : AuthRepository {
+    override val sessionStatus: Flow<SessionStatus>
+        get() = supabase.auth.sessionStatus
 
-                    when (it.source) {
-                        SessionSource.External -> TODO()
-                        is SessionSource.Refresh -> TODO()
-                        is SessionSource.SignIn -> TODO()
-                        is SessionSource.SignUp -> TODO()
-                        SessionSource.Storage -> TODO()
-                        SessionSource.Unknown -> TODO()
-                        is SessionSource.UserChanged -> TODO()
-                        is SessionSource.UserIdentitiesChanged -> TODO()
-                        SessionSource.AnonymousSignIn -> TODO()
+    override suspend fun logout() {
+        supabase.auth.signOut()
+    }
+
+    override suspend fun getUser(): User {
+        val authUser = supabase.auth.currentUserOrNull() ?: throw Exception("User not logged in")
+
+        val profile = supabase.from("profiles")
+            .select {
+                filter {
+                    eq("id", authUser.id)
+                }
+            }.decodeSingle<ProfileDto>()
+
+        return User(
+            id = profile.id,
+            name = profile.fullName ?: "No Name",
+            role = "",
+            initial = AvatarUtils.getInitials(profile.fullName),
+            email = authUser.email,
+        )
+    }
+
+    override fun signUp(
+        emailValue: String,
+        passwordValue: String,
+        fullName: String
+    ): Flow<Result<String>> =
+        flow {
+            emit(Result.Loading)
+            try {
+                supabase.auth.signUpWith(Email) {
+                    email = emailValue
+                    password = passwordValue
+                    data = buildJsonObject {
+                        put("full_name", fullName)
                     }
                 }
+                Log.e(TAG, "Berhasil signup")
+                emit(Result.Success("Sign up successfully! Please check your email."))
+            } catch (e: Exception) {
+                emit(Result.Error(e.message ?: "An unexpected error occurred"))
+            }
+        }
 
-                SessionStatus.Initializing -> println("Initializing")
-                is SessionStatus.RefreshFailure -> {
-                    println("Session expired and could not be refreshed")
+    override fun signInWithEmail(emailValue: String, passwordValue: String): Flow<Result<String>> =
+        flow {
+            emit(Result.Loading)
+            try {
+                supabase.auth.signInWith(Email) {
+                    email = emailValue
+                    password = passwordValue
                 }
-
-                is SessionStatus.NotAuthenticated -> {
-                    if (it.isSignOut) {
-                        println("User signed out")
-                    } else {
-                        println("User not signed in")
-                    }
-                }
+                emit(Result.Success("Sign in Successfully!"))
+            } catch (e: Exception) {
+                emit(Result.Error(e.localizedMessage ?: "An unexpected error occurred"))
             }
         }
-    }
-
-    fun signUpWithEmail(emailValue: String, passwordValue: String): Flow<Result<String>> = flow {
-        emit(Result.Loading)
-        try {
-            supabase.auth.signUpWith(Email) {
-                email = emailValue
-                password = passwordValue
-            }
-            Log.e(TAG, "Berhasil signup")
-            emit(Result.Success("Sign up successfully! Please check your email."))
-        } catch (e: Exception) {
-            emit(Result.Error(e.message ?: "An unexpected error occurred"))
-        }
-    }
-
-    fun signInWithEmail(emailValue: String, passwordValue: String): Flow<Result<String>> = flow {
-        emit(Result.Loading)
-        try {
-            supabase.auth.signInWith(Email) {
-                email = emailValue
-                password = passwordValue
-            }
-            emit(Result.Success("Sign in Successfully!"))
-        } catch (e: Exception) {
-            emit(Result.Error(e.localizedMessage ?: "An unexpected error occurred"))
-        }
-    }
 
     fun createNonce(input: String): String {
         val md = MessageDigest.getInstance("SHA-256")

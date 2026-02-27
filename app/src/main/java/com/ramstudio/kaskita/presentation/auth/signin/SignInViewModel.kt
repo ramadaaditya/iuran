@@ -3,11 +3,10 @@ package com.ramstudio.kaskita.presentation.auth.signin
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramstudio.kaskita.core.utils.AuthRepository
+import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
 import com.ramstudio.kaskita.core.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -34,7 +33,7 @@ sealed interface SignInUiEvent {
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepositoryImpl: AuthRepositoryImpl
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState = _uiState.asStateFlow()
@@ -81,7 +80,7 @@ class SignInViewModel @Inject constructor(
 
     fun signInWithEmail() {
         viewModelScope.launch {
-            authRepository.signInWithEmail(_uiState.value.email, uiState.value.password)
+            authRepositoryImpl.signInWithEmail(_uiState.value.email, uiState.value.password)
                 .collect { result ->
                     when (result) {
                         is Result.Error -> {

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">KasKita</string>
+    <string name="Community">Community</string>
+    <string name="Dashboard">Dashboard</string>
+    <string name="Transaction">Transaction</string>
+    <string name="Settings">Settings</string>
 </resources>

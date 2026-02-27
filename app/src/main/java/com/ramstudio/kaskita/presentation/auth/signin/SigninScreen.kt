@@ -1,6 +1,5 @@
 package com.ramstudio.kaskita.presentation.auth.signin
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,13 +14,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,45 +32,49 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices.PIXEL_5
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ramstudio.kaskita.presentation.auth.register.Gradient
-import com.ramstudio.kaskita.ui.theme.KasKitaTheme
-import com.ramstudio.kaskita.ui.theme.black
-import com.ramstudio.kaskita.ui.theme.darkPurple
+import com.ramstudio.kaskita.presentation.auth.register.LightGradient
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+val BgColor = Color(0xFFFBFCFD)
+val PrimaryGreen = Color(0xFF00BFA5)
+val TextDark = Color(0xFF1A1A1A)
+val TextGrey = Color(0xFF757575)
+
 @Composable
 fun SignInScreen(
-    onNavigateDashboard: () -> Unit,
     onNavigateSignUp: () -> Unit,
     viewModel: SignInViewModel = hiltViewModel()
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     LaunchedEffect(viewModel.uiEvent) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is SignInUiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is SignInUiEvent.NavigateHome -> onNavigateDashboard()
+                is SignInUiEvent.NavigateHome -> {}
                 is SignInUiEvent.NavigateSignUp -> onNavigateSignUp()
             }
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) {
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = BgColor
+    ) { paddingValues ->
         SignInContent(
             uiState = uiState,
-            onEmailChange = { it -> viewModel.onEmailChange(it) },
-            onPasswordChange = { it -> viewModel.onPasswordChange(it) },
-            onSignInClick = { viewModel.signInWithEmail()},
-            navigateSignUp = onNavigateSignUp
+            onEmailChange = { viewModel.onEmailChange(it) },
+            onPasswordChange = { viewModel.onPasswordChange(it) },
+            onSignInClick = { viewModel.signInWithEmail() },
+            navigateSignUp = onNavigateSignUp,
+            modifier = Modifier.padding(paddingValues)
         )
     }
 }
@@ -82,103 +85,109 @@ fun SignInContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
-    navigateSignUp: () -> Unit
+    navigateSignUp: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(black),
+            .background(BgColor),
         contentAlignment = Alignment.TopCenter
     ) {
-        Gradient()
+        LightGradient()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .padding(top = 120.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 100.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             SignInHeader()
-            Spacer(modifier = Modifier.height(40.dp))
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "Email",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = TextDark,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                TextField(
+                OutlinedTextField(
                     value = uiState.email,
                     onValueChange = onEmailChange,
                     placeholder = {
                         Text(
                             text = "john.doe@example.com",
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color.White,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = darkPurple,
-                        unfocusedContainerColor = darkPurple
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = PrimaryGreen,
+                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
+                        focusedTextColor = TextDark,
+                        unfocusedTextColor = TextDark,
+                        cursorColor = PrimaryGreen
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "Password",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    color = TextDark,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                TextField(
+                OutlinedTextField(
                     value = uiState.password,
                     onValueChange = onPasswordChange,
                     placeholder = {
                         Text(
                             text = "Enter your password",
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
                     visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = darkPurple,
-                        unfocusedContainerColor = darkPurple,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = PrimaryGreen,
+                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
+                        focusedTextColor = TextDark,
+                        unfocusedTextColor = TextDark,
+                        cursorColor = PrimaryGreen
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(35.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             Button(
                 onClick = onSignInClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
+                    containerColor = PrimaryGreen,
+                    disabledContainerColor = PrimaryGreen.copy(alpha = 0.5f)
                 ),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp), // Ketinggian tombol disamakan dengan field
                 enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
@@ -190,23 +199,22 @@ fun SignInContent(
                 } else {
                     Text(
                         text = "Sign in",
-                        color = black,
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            TextButton(
-                onClick = navigateSignUp
-            ) {
+            TextButton(onClick = navigateSignUp) {
                 Text(
                     text = buildAnnotatedString {
                         withStyle(
                             style = SpanStyle(
-                                fontWeight = FontWeight.Light,
-                                color = Color.White.copy(alpha = 0.8f)
+                                fontWeight = FontWeight.Normal,
+                                color = TextGrey
                             )
                         ) {
                             append("Don't have an account? ")
@@ -215,7 +223,7 @@ fun SignInContent(
                         withStyle(
                             style = SpanStyle(
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = PrimaryGreen
                             )
                         ) {
                             append("Sign Up")
@@ -227,31 +235,33 @@ fun SignInContent(
     }
 }
 
-
 @Composable
 fun SignInHeader() {
     Text(
-        text = "Login to your Account",
-        style = MaterialTheme.typography.titleLarge,
-        color = Color.White,
-        fontWeight = FontWeight.Bold
+        text = "Welcome Back",
+        style = MaterialTheme.typography.headlineLarge,
+        color = TextDark,
+        fontWeight = FontWeight.ExtraBold
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Enter your personal data to login",
+        text = "Log in to manage your community cash flow and track notes securely",
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White
+        color = TextGrey,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
 @Preview(showBackground = true, device = PIXEL_5)
 @Composable
 private fun SignInScreenPreview() {
-    KasKitaTheme {
+    MaterialTheme {
         SignInContent(
             uiState = SignInUiState(
-                email = "Ramada aditya",
-                password = "Ramada"
+                email = "ramada@example.com",
+                password = "password123"
             ),
             onEmailChange = {},
             onPasswordChange = {},

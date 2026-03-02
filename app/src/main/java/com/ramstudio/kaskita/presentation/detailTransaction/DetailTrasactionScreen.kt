@@ -1,5 +1,6 @@
 package com.ramstudio.kaskita.presentation.detailTransaction
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Image
@@ -38,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +50,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
+import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.presentation.transaction.TransactionStatusChip
@@ -68,13 +73,10 @@ import com.ramstudio.kaskita.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.ui.theme.WarningYellow
 import com.ramstudio.kaskita.ui.theme.White
 
-// ── Navigation helper ─────────────────────────────────────────────────────────
-
 fun NavController.navigateToDetailTransaction(id: String) {
     navigate(ScreenRoute.DetailTransaction(id))
 }
 
-// ── Screen entry-point ────────────────────────────────────────────────────────
 
 @Composable
 fun TransactionDetailsScreen(
@@ -84,13 +86,21 @@ fun TransactionDetailsScreen(
     viewModel: TransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = LocalAppSnackbarHostState.current
+    val scope = rememberCoroutineScope()
 
+    val isAdmin = true
     LaunchedEffect(transactionId) {
         viewModel.loadTransactionDetail(transactionId)
     }
 
-    // TODO: Replace with real isAdmin from community context
-    val isAdmin = true
+    LaunchedEffect(uiState.actionSuccess) {
+        uiState.actionSuccess?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearActionSuccess()
+            onBackClick()
+        }
+    }
 
     when {
         uiState.isLoading -> {
@@ -103,7 +113,7 @@ fun TransactionDetailsScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        Icons.Rounded.ReceiptLong,
+                        Icons.AutoMirrored.Rounded.ReceiptLong,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(56.dp)
@@ -123,9 +133,11 @@ fun TransactionDetailsScreen(
                 transaction = uiState.selectedTransaction!!,
                 isAdmin = isAdmin,
                 onBackClick = onBackClick,
-                onApprove = { /* TODO: viewModel.approveTransaction(transactionId) */ },
-                onReject = { /* TODO: viewModel.rejectTransaction(transactionId) */ },
-                modifier = modifier
+                onApprove = { viewModel.approveTransaction(transactionId) },
+                onReject = { viewModel.rejectTransaction(transactionId) },
+                modifier = modifier,
+                isActionLoading = uiState.isActionLoading,
+                snackbarHostState = snackbarHostState
             )
         }
     }
@@ -141,7 +153,9 @@ fun TransactionDetailsContent(
     onBackClick: () -> Unit,
     onApprove: () -> Unit,
     onReject: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isActionLoading: Boolean,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     var showRejectDialog by remember { mutableStateOf(false) }
 
@@ -174,6 +188,7 @@ fun TransactionDetailsContent(
         bottomBar = {
             if (isAdmin && transaction.status == TransactionStatus.PENDING) {
                 AdminActionBar(
+                    isLoading = isActionLoading,
                     onApprove = onApprove,
                     onReject = { showRejectDialog = true }
                 )
@@ -413,6 +428,7 @@ private fun EvidenceSection() {
 
 @Composable
 private fun AdminActionBar(
+    isLoading: Boolean,
     onApprove: () -> Unit,
     onReject: () -> Unit
 ) {
@@ -437,7 +453,7 @@ private fun AdminActionBar(
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = ErrorRed
                 ),
-                border = androidx.compose.foundation.BorderStroke(
+                border = BorderStroke(
                     1.5.dp, ErrorRed.copy(alpha = 0.5f)
                 )
             ) {
@@ -462,13 +478,21 @@ private fun AdminActionBar(
                     contentColor = Color.White
                 )
             ) {
-                Icon(
-                    Icons.Rounded.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Approve", fontWeight = FontWeight.Bold)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        Icons.Rounded.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Approve", fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

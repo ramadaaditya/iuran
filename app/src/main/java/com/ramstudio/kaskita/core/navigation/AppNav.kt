@@ -2,6 +2,9 @@ package com.ramstudio.kaskita.core.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -10,6 +13,7 @@ import com.ramstudio.kaskita.presentation.auth.register.SignUpScreen
 import com.ramstudio.kaskita.presentation.auth.signin.SignInScreen
 import com.ramstudio.kaskita.presentation.community.CommunityScreen
 import com.ramstudio.kaskita.presentation.dashboard.DashboardScreen
+import com.ramstudio.kaskita.presentation.dashboard.DashboardViewModel
 import com.ramstudio.kaskita.presentation.detailCommunity.CommunityDetailScreen
 import com.ramstudio.kaskita.presentation.detailTransaction.TransactionDetailsScreen
 import com.ramstudio.kaskita.presentation.detailTransaction.navigateToDetailTransaction
@@ -51,13 +55,20 @@ fun AppNavHost(
                 }
 
                 composable<ScreenRoute.Transaction> {
-                    TransactionScreen(innerPadding, onDetailClick = { id ->
-                        navController.navigateToDetailTransaction(id)
-
-                    })
+                    val dashboardViewModel: DashboardViewModel = hiltViewModel()
+                    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+                    TransactionScreen(
+                        innerPadding,
+                        communityId = dashboardUiState.selectedCommunity?.id ?: "",
+                        onDetailClick = { id ->
+                            navController.navigateToDetailTransaction(id)
+                        },
+                        isAdmin = dashboardUiState.isAdmin
+                    )
                 }
-                composable<ScreenRoute.DetailTransaction> {
-                    TransactionDetailsScreen(onBackClick = {}, transactionId = "")
+                composable<ScreenRoute.DetailTransaction> { backStackEntry ->
+                    val route = backStackEntry.toRoute<ScreenRoute.DetailTransaction>()
+                    TransactionDetailsScreen(onBackClick = {}, transactionId = route.transactionId)
                 }
                 composable<ScreenRoute.DetailCommunity> { backStackEntry ->
                     val route = backStackEntry.toRoute<ScreenRoute.DetailCommunity>()
@@ -65,7 +76,7 @@ fun AppNavHost(
                         communityId = route.communityId,
                         onBackClick = { navController.popBackStack() },
                         onAddTransactionClick = {
-                            navController.navigate(ScreenRoute.AddTransactions)
+                            navController.navigate(ScreenRoute.AddTransactions(communityId = route.communityId))
                         }
                     )
                 }
@@ -73,8 +84,13 @@ fun AppNavHost(
                     SettingsScreen(innerPadding)
                 }
 
-                composable<ScreenRoute.AddTransactions> {
-                    AddTransactionScreen(onCloseClick = {})
+                composable<ScreenRoute.AddTransactions> { backStackEntry ->
+                    val route = backStackEntry.toRoute<ScreenRoute.AddTransactions>()
+                    AddTransactionScreen(
+                        communityId = route.communityId,
+                        onCloseClick = { navController.popBackStack() },
+                        onSuccess = { navController.popBackStack() }
+                    )
                 }
             }
         }

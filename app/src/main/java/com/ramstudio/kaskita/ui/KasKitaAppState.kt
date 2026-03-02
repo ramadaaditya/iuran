@@ -88,7 +88,8 @@ class KasKitaState(
         }
     }
 
-    fun navigateToAddTransactions() = navController.navigate(ScreenRoute.AddTransactions)
+    fun navigateToAddTransactions(communityId: String) =
+        navController.navigate(ScreenRoute.AddTransactions(communityId))
 
 
 }

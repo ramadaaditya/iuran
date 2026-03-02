@@ -1,5 +1,7 @@
 package com.ramstudio.kaskita.presentation.transaction
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +42,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,17 +59,15 @@ import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.domain.model.toUiModel
 import com.ramstudio.kaskita.ui.theme.AlertOrange
 import com.ramstudio.kaskita.ui.theme.ErrorRed
+import com.ramstudio.kaskita.ui.theme.KasKitaTheme
 import com.ramstudio.kaskita.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.ui.theme.WarningYellow
 import com.ramstudio.kaskita.ui.theme.White
-
-// ── Navigation helper ─────────────────────────────────────────────────────────
 
 fun NavController.navigateToTransactions(navOptions: NavOptions? = null) =
     if (navOptions != null) navigate(route = ScreenRoute.Transaction, navOptions)
     else navigate(ScreenRoute.Transaction)
 
-// ── Filter tab state ──────────────────────────────────────────────────────────
 
 private enum class TransactionFilter(val label: String) {
     ALL("All"),
@@ -73,18 +76,22 @@ private enum class TransactionFilter(val label: String) {
     PENDING("Pending")
 }
 
-// ── Screen entry-point ────────────────────────────────────────────────────────
 
 @Composable
 fun TransactionScreen(
     innerPadding: PaddingValues,
     viewModel: TransactionViewModel = hiltViewModel(),
-    onDetailClick: (String) -> Unit
+    onDetailClick: (String) -> Unit,
+    communityId: String,
+    isAdmin: Boolean = false
 ) {
+    Log.d(TAG, "TransactionScreen: $isAdmin")
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    // TODO: Replace with real isAdmin from DashboardViewModel / community context
-    val isAdmin = true
+    LaunchedEffect(communityId) {
+        if (communityId.isNotBlank()) {
+            viewModel.loadTransactionsByCommunity(communityId)
+        }
+    }
 
     TransactionContent(
         transactions = uiState.transactions,
@@ -95,7 +102,6 @@ fun TransactionScreen(
     )
 }
 
-// ── Main content ──────────────────────────────────────────────────────────────
 
 @Composable
 fun TransactionContent(
@@ -134,7 +140,6 @@ fun TransactionContent(
             )
         }
 
-        // ── Admin pending approvals banner ────────────────────────────────────
         if (isAdmin && pendingCount > 0) {
             item {
                 PendingApprovalBanner(
@@ -145,7 +150,6 @@ fun TransactionContent(
             }
         }
 
-        // ── Summary chips (admin only) ────────────────────────────────────────
         if (isAdmin) {
             item {
                 AdminSummaryRow(
@@ -258,7 +262,7 @@ private fun PendingApprovalBanner(count: Int, modifier: Modifier = Modifier) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = WarningYellow.copy(alpha = 0.08f)),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(WarningYellow.copy(alpha = 0.4f))
+            brush = SolidColor(WarningYellow.copy(alpha = 0.4f))
         )
     ) {
         Row(
@@ -468,7 +472,6 @@ private fun TransactionEmptyState(filter: TransactionFilter) {
     }
 }
 
-// ── Shared TransactionItem (reused from dashboard) ────────────────────────────
 
 @Composable
 fun TransactionItem(
@@ -479,7 +482,9 @@ fun TransactionItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable {
+                onClick()
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -492,15 +497,15 @@ fun TransactionItem(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = transaction.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
+//            Text(
+//                text = transaction.subtitle,
+//                style = MaterialTheme.typography.bodySmall,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                maxLines = 1,
+//                overflow = TextOverflow.Ellipsis
+//            )
         }
 
         Column(horizontalAlignment = Alignment.End) {
@@ -511,7 +516,7 @@ fun TransactionItem(
                 color = if (transaction.isPositive) SuccessGreen else MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(4.dp))
-            TransactionStatusChip(status = transaction.status)
+//            TransactionStatusChip(status = transaction.status)
         }
     }
 }
@@ -596,5 +601,14 @@ fun TransactionScreenPreview() {
             innerPadding = PaddingValues(),
             onDetailClick = {}
         )
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+private fun PendingApprovalBannerPreview() {
+    KasKitaTheme {
+        PendingApprovalBanner(count = 2)
     }
 }

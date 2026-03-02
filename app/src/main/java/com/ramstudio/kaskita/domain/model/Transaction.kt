@@ -45,7 +45,7 @@ data class TransactionUiModel(
     val amountText: String,
     val isPositive: Boolean,
     val timeText: String,
-    val status: TransactionStatus = TransactionStatus.SUCCESS,
+    val status: TransactionStatus,
     val category: TransactionCategory,
     val initiatorName: String = "",
 )
@@ -69,13 +69,14 @@ fun Transaction.toUiModel(): TransactionUiModel {
         isPositive = isPositive,
         timeText = formatTime(createdAt),
         category = type,
-        initiatorName = userId
+        initiatorName = userId,
+        status = status
     )
 }
 
 fun formatCurrency(amount: Double, isPositive: Boolean): String {
     val prefix = if (isPositive) "+" else "-"
-    val formatted = "%,.0f".format(kotlin.math.abs(amount))  // 150.000 bukan 150.00
+    val formatted = "%,.0f".format(kotlin.math.abs(amount))
     return "${prefix}Rp $formatted"
 }
 
@@ -101,7 +102,7 @@ fun TransactionDto.toDomain(): Transaction {
                 TransactionCategory.EXPENSE
             },
             status = when (status.uppercase()) {
-                "SUCCESS" -> TransactionStatus.SUCCESS
+                "APPROVED" -> TransactionStatus.SUCCESS
                 "PENDING" -> TransactionStatus.PENDING
                 "REJECTED" -> TransactionStatus.REJECTED
                 else -> TransactionStatus.PENDING

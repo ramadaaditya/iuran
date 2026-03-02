@@ -1,5 +1,7 @@
 package com.ramstudio.kaskita.presentation.transaction
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -34,6 +36,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,14 +44,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,72 +64,84 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.ui.theme.ErrorRed
 import com.ramstudio.kaskita.ui.theme.SuccessGreen
 
-// ── Transaction type ──────────────────────────────────────────────────────────
-
-enum class TransactionType { EXPENSE, INCOME }
-
-// ── Screen entry-point ────────────────────────────────────────────────────────
-
 @Composable
 fun AddTransactionScreen(
+    communityId: String,
     onCloseClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onSuccess: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
-    var transactionType by remember { mutableStateOf(TransactionType.INCOME) }
-    var amount by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var hasReceiptAttached by remember { mutableStateOf(false) }
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    Log.d(TAG, "AddTransactionScreen: $communityId")
+
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            snackbarHostState.showSnackbar("Transaksi berhasil dikirim, menunggu persetujuan admin")
+            viewModel.clearForm()
+            onSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     AddTransactionContent(
         modifier = modifier,
-        transactionType = transactionType,
-        amount = amount,
-        description = description,
-        hasReceiptAttached = hasReceiptAttached,
-        onTypeChange = { transactionType = it },
-        onAmountChange = { amount = it },
-        onDescriptionChange = { description = it },
-        onAttachReceipt = { hasReceiptAttached = !hasReceiptAttached },
+        transactionType = uiState.transactionType,
+        amount = uiState.amount,
+        description = uiState.description,
+        hasReceiptAttached = uiState.hasReceipt,
+        onTypeChange = viewModel::onTypeChange,
+        onAmountChange = viewModel::onAmountChange,
+        onDescriptionChange = viewModel::onDescriptionChange,
+        onAttachReceipt = viewModel::onReceiptAttached,
         onCloseClick = onCloseClick,
-        onClearClick = {
-            amount = ""
-            description = ""
-            hasReceiptAttached = false
-        },
-        onSubmitClick = { /* TODO: viewModel.submitTransaction(type, amount, description) */ }
+        onSubmitClick = { viewModel.submitTransaction(communityId) },
+        snackbarHostState = snackbarHostState,
+        isLoading = uiState.isLoading,
     )
 }
 
-// ── Stateless content ─────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionContent(
     modifier: Modifier = Modifier,
-    transactionType: TransactionType,
+    transactionType: TransactionCategory,
     amount: String,
     description: String,
     hasReceiptAttached: Boolean,
-    onTypeChange: (TransactionType) -> Unit,
+    onTypeChange: (TransactionCategory) -> Unit,
     onAmountChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onAttachReceipt: () -> Unit,
     onCloseClick: () -> Unit,
-    onClearClick: () -> Unit,
-    onSubmitClick: () -> Unit
+    onSubmitClick: () -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    isLoading: Boolean
 ) {
-    // Accent color animates between income/expense
     val accentColor by animateColorAsState(
-        targetValue = if (transactionType == TransactionType.INCOME) SuccessGreen else ErrorRed,
+        targetValue = if (transactionType == TransactionCategory.INCOME) SuccessGreen else ErrorRed,
         animationSpec = tween(300),
         label = "accentColor"
     )
 
     val isFormValid = amount.isNotBlank() && amount.toDoubleOrNull() != null
-            && description.isNotBlank() && hasReceiptAttached
+            && description.isNotBlank()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -158,9 +173,9 @@ fun AddTransactionContent(
         bottomBar = {
             SubmitBar(
                 accentColor = accentColor,
-                isEnabled = isFormValid,
-                onClearClick = onClearClick,
-                onSubmitClick = onSubmitClick
+                isEnabled = isFormValid && !isLoading,
+                onSubmitClick = onSubmitClick,
+                isLoading = isLoading
             )
         }
     ) { paddingValues ->
@@ -249,8 +264,8 @@ fun AddTransactionContent(
 
 @Composable
 private fun TypeToggle(
-    selected: TransactionType,
-    onSelect: (TransactionType) -> Unit,
+    selected: TransactionCategory,
+    onSelect: (TransactionCategory) -> Unit,
     accentColor: Color
 ) {
     Row(
@@ -261,7 +276,7 @@ private fun TypeToggle(
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(4.dp)
     ) {
-        TransactionType.values().forEach { type ->
+        TransactionCategory.values().forEach { type ->
             val isSelected = selected == type
             val bgColor by animateColorAsState(
                 targetValue = if (isSelected) accentColor else Color.Transparent,
@@ -467,7 +482,7 @@ private fun ReceiptUploadField(
 
 @Composable
 private fun StatusInfoNote(
-    transactionType: TransactionType,
+    transactionType: TransactionCategory,
     accentColor: Color
 ) {
     Row(
@@ -489,10 +504,10 @@ private fun StatusInfoNote(
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = when (transactionType) {
-                TransactionType.INCOME ->
+                TransactionCategory.INCOME ->
                     "Your deposit will be submitted as PENDING and needs admin approval before the balance is updated."
 
-                TransactionType.EXPENSE ->
+                TransactionCategory.EXPENSE ->
                     "Withdrawals can only be submitted by admins. This will be recorded as PENDING until approved."
             },
             style = MaterialTheme.typography.bodySmall,
@@ -508,7 +523,7 @@ private fun StatusInfoNote(
 private fun SubmitBar(
     accentColor: Color,
     isEnabled: Boolean,
-    onClearClick: () -> Unit,
+    isLoading: Boolean,
     onSubmitClick: () -> Unit
 ) {
     Surface(
@@ -535,20 +550,30 @@ private fun SubmitBar(
                     .fillMaxWidth()
                     .height(54.dp)
             ) {
-                Text(
-                    text = "Submit Transaction",
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.3.sp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    Icons.AutoMirrored.Rounded.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+
+
+                    Text(
+                        text = "Submit Transaction",
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.3.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
 
-            if (!isEnabled) {
+            if (!isEnabled && !isLoading) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Fill in amount, description, and attach a receipt to continue",
@@ -568,6 +593,6 @@ private fun SubmitBar(
 @Composable
 fun AddTransactionScreenPreview() {
     MaterialTheme {
-        AddTransactionScreen(onCloseClick = {})
+        AddTransactionScreen(onCloseClick = {}, communityId = "", onSuccess = {})
     }
 }

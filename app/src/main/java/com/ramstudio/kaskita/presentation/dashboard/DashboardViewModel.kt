@@ -37,16 +37,16 @@ data class DashboardUiState(
 class DashboardViewModel @Inject constructor(
     private val repository: ICommunityRepository,
     private val trxRepository: ITransactionRepository,
-
     ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
-
+//
     init {
         observeCommunities()
         observeTransactions()
     }
+
 
     private fun observeTransactions() {
         viewModelScope.launch {

@@ -71,26 +71,26 @@ class SignUpViewModel @Inject constructor(
         }
     }
 
-    fun loginGoogle(activityContext: Context) {
-        viewModelScope.launch {
-            Log.d("LOGIN_FLOW", "Mulai login dari ViewModel")
-
-            authRepositoryImpl.signInCredentialManager(activityContext)
-                .collect { result ->
-                    when (result) {
-                        is AuthResponse.Success -> {
-                            Log.d(TAG, "loginGoogle: Login Sukses")
-                        }
-
-                        is AuthResponse.Error -> {
-                            Log.d(TAG, "loginGoogle: Login Gagal")
-                        }
-                    }
-
-                }
-
-        }
-    }
+//    fun loginGoogle(activityContext: Context) {
+//        viewModelScope.launch {
+//            Log.d("LOGIN_FLOW", "Mulai login dari ViewModel")
+//
+//            authRepositoryImpl.signInCredentialManager(activityContext)
+//                .collect { result ->
+//                    when (result) {
+//                        is AuthResponse.Success -> {
+//                            Log.d(TAG, "loginGoogle: Login Sukses")
+//                        }
+//
+//                        is AuthResponse.Error -> {
+//                            Log.d(TAG, "loginGoogle: Login Gagal")
+//                        }
+//                    }
+//
+//                }
+//
+//        }
+//    }
 
     fun signUpWithEmail() {
         viewModelScope.launch {

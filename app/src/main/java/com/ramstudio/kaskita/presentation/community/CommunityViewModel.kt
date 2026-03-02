@@ -1,9 +1,11 @@
 package com.ramstudio.kaskita.presentation.community
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.Result
+import com.ramstudio.kaskita.domain.repository.AuthRepository
 import com.ramstudio.kaskita.domain.repository.ICommunityRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,25 +19,51 @@ data class DashboardUiState(
     val communities: List<Community> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val currentUserId: String? = null,
 )
 
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
-    private val repository: ICommunityRepository
+    private val repository: ICommunityRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
+    // Backing property untuk state
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    companion object {
+        private const val MIN_COMMUNITY_CODE_LENGTH = 5
+    }
+
     init {
+        loadCurrentUser()
         observeCommunities()
     }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val user = authRepository.getUser()
+                _uiState.update { it.copy(currentUserId = user.id) }
+            } catch (_: Exception) {
+                // User not logged in or error fetching user
+                _uiState.update { it.copy(currentUserId = null) }
+            }
+        }
+    }
+
 
     private fun observeCommunities() {
         viewModelScope.launch {
             repository.getAllCommunity().collect { communities ->
                 _uiState.update {
                     it.copy(communities = communities)
+                }
+                // 🔥 DEBUG DI SINI
+                Log.d("CommunityVM", "Communities size: ${communities.size}")
+                communities.forEach {
+                    Log.d("CommunityVM", "Community: $it")
                 }
             }
         }
@@ -72,13 +100,14 @@ class CommunityViewModel @Inject constructor(
                     }
                 }
 
-                is Result.Loading -> {}
+                is Result.Loading -> { /* Handled by isLoading flag */
+                }
             }
         }
     }
 
     fun joinCommunity(code: String) {
-        if (code.length < 5) { // Validasi sederhana
+        if (code.length < MIN_COMMUNITY_CODE_LENGTH) {
             _uiState.update { it.copy(errorMessage = "Kode komunitas tidak valid") }
             return
         }

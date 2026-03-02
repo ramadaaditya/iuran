@@ -19,7 +19,6 @@ data class Community(
     @SerialName("created_by")
     val createdBy: String? = null,
     val balance: Double,
-    // Tambahan property UI/Mock untuk menyesuaikan desain
     val membersCount: Int = 0,
     @Serializable(with = ColorSerializer::class)
     val themeColor: Color = PrimaryGreen
@@ -41,8 +40,7 @@ object ColorSerializer : KSerializer<Color> {
         PrimitiveSerialDescriptor("Color", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: Color) {
-        // Mengubah Color menjadi format String Hex (misal: "FF00BFA5")
-        // Kita buang awalan "0x" atau "#" agar rapi di JSON
+
         encoder.encodeString(value.value.toString(16).uppercase())
     }
 

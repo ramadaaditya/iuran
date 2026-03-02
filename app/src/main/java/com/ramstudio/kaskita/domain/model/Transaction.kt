@@ -42,7 +42,8 @@ data class TransactionUiModel(
     val iconBgColor: Color,
     val title: String,
     val subtitle: String,
-    val amountText: String,
+    val amount: Double,       // raw amount — use this for calculations
+    val amountText: String,   // display string — use this for UI only
     val isPositive: Boolean,
     val timeText: String,
     val status: TransactionStatus,
@@ -65,6 +66,7 @@ fun Transaction.toUiModel(): TransactionUiModel {
         iconBgColor = if (isPositive) IconBgGreen else IconBgYellow,
         title = description ?: if (isPositive) "Pemasukan" else "Pengeluaran",
         subtitle = "Status: $status",
+        amount = amount,
         amountText = formatCurrency(amount, isPositive),
         isPositive = isPositive,
         timeText = formatTime(createdAt),

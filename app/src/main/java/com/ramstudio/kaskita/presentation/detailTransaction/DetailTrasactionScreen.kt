@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,7 +39,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -137,7 +135,6 @@ fun TransactionDetailsScreen(
                 onReject = { viewModel.rejectTransaction(transactionId) },
                 modifier = modifier,
                 isActionLoading = uiState.isActionLoading,
-                snackbarHostState = snackbarHostState
             )
         }
     }
@@ -155,7 +152,6 @@ fun TransactionDetailsContent(
     onReject: () -> Unit,
     modifier: Modifier = Modifier,
     isActionLoading: Boolean,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     var showRejectDialog by remember { mutableStateOf(false) }
 
@@ -446,6 +442,7 @@ private fun AdminActionBar(
             // Reject
             OutlinedButton(
                 onClick = onReject,
+                enabled = !isLoading,
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp),
@@ -469,6 +466,7 @@ private fun AdminActionBar(
             // Approve
             Button(
                 onClick = onApprove,
+                enabled = !isLoading,
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp),

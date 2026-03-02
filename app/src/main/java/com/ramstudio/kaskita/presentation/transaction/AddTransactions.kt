@@ -1,7 +1,5 @@
 package com.ramstudio.kaskita.presentation.transaction
 
-import android.content.ContentValues.TAG
-import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -44,14 +42,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.ui.theme.ErrorRed
 import com.ramstudio.kaskita.ui.theme.SuccessGreen
@@ -80,9 +77,7 @@ fun AddTransactionScreen(
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    Log.d(TAG, "AddTransactionScreen: $communityId")
+    val snackbarHostState = LocalAppSnackbarHostState.current
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
@@ -111,7 +106,6 @@ fun AddTransactionScreen(
         onAttachReceipt = viewModel::onReceiptAttached,
         onCloseClick = onCloseClick,
         onSubmitClick = { viewModel.submitTransaction(communityId) },
-        snackbarHostState = snackbarHostState,
         isLoading = uiState.isLoading,
     )
 }
@@ -131,7 +125,6 @@ fun AddTransactionContent(
     onAttachReceipt: () -> Unit,
     onCloseClick: () -> Unit,
     onSubmitClick: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     isLoading: Boolean
 ) {
     val accentColor by animateColorAsState(

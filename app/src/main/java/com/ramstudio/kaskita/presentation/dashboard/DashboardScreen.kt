@@ -1,5 +1,6 @@
 package com.ramstudio.kaskita.presentation.dashboard
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ChevronRight
@@ -73,9 +75,7 @@ import com.ramstudio.kaskita.ui.theme.White
 import java.text.NumberFormat
 import java.util.Locale
 
-// ---------------------------------------------------------------------------
-// Dummy Communities
-// ---------------------------------------------------------------------------
+
 
 val dummyCommunities = listOf(
     Community(
@@ -110,10 +110,6 @@ val dummyCommunities = listOf(
     )
 )
 
-// ---------------------------------------------------------------------------
-// Dummy Transactions
-// ---------------------------------------------------------------------------
-
 val dummyTransactions = listOf(
     TransactionUiModel(
         id = "tx-1",
@@ -126,7 +122,8 @@ val dummyTransactions = listOf(
         timeText = "5 menit lalu",
         status = TransactionStatus.PENDING,
         category = TransactionCategory.INCOME,
-        initiatorName = "Budi Santoso"
+        initiatorName = "Budi Santoso",
+        amount = 5000.0
     ),
     TransactionUiModel(
         id = "tx-2",
@@ -139,7 +136,8 @@ val dummyTransactions = listOf(
         timeText = "2 jam lalu",
         status = TransactionStatus.SUCCESS,
         category = TransactionCategory.EXPENSE,
-        initiatorName = "Admin"
+        initiatorName = "Admin",
+        amount = 25000.0
     ),
     TransactionUiModel(
         id = "tx-3",
@@ -152,7 +150,8 @@ val dummyTransactions = listOf(
         timeText = "1 hari lalu",
         status = TransactionStatus.SUCCESS,
         category = TransactionCategory.INCOME,
-        initiatorName = "Siti Rahayu"
+        initiatorName = "Siti Rahayu",
+        amount = 25000.0
     ),
     TransactionUiModel(
         id = "tx-4",
@@ -165,7 +164,8 @@ val dummyTransactions = listOf(
         timeText = "2 hari lalu",
         status = TransactionStatus.SUCCESS,
         category = TransactionCategory.EXPENSE,
-        initiatorName = "Admin"
+        initiatorName = "Admin",
+        amount = 25000.0
     ),
     TransactionUiModel(
         id = "tx-5",
@@ -178,7 +178,8 @@ val dummyTransactions = listOf(
         timeText = "3 hari lalu",
         status = TransactionStatus.REJECTED,
         category = TransactionCategory.INCOME,
-        initiatorName = "Ahmad Fauzi"
+        initiatorName = "Ahmad Fauzi",
+        amount = 25000.0
     )
 )
 
@@ -216,6 +217,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentUserId = uiState.currentUserId
 
     DashboardContent(
         uiState = uiState,
@@ -614,10 +616,6 @@ private fun PendingApprovalsBanner(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Recent Activity Header
-// ---------------------------------------------------------------------------
-
 @Composable
 private fun RecentActivityHeader(modifier: Modifier = Modifier) {
     Row(
@@ -641,9 +639,6 @@ private fun RecentActivityHeader(modifier: Modifier = Modifier) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Transaction Item
-// ---------------------------------------------------------------------------
 
 @Composable
 fun TransactionItem(
@@ -815,7 +810,7 @@ private fun EmptyTransactionState(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.ReceiptLong,
+            imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
             contentDescription = null,
             tint = Border,
             modifier = Modifier.size(48.dp)

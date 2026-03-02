@@ -1,5 +1,6 @@
 package com.ramstudio.kaskita.presentation.community
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,13 +60,11 @@ import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.presentation.dashboard.component.CreateCommunityDialog
 import com.ramstudio.kaskita.presentation.dashboard.component.JoinCommunityDialog
 
-// ── Navigation helper ────────────────────────────────────────────────────────
 
 fun NavController.navigateToCommunity(navOptions: NavOptions? = null) =
     if (navOptions != null) navigate(route = ScreenRoute.Community, navOptions)
     else navigate(ScreenRoute.Community)
 
-// ── Screen entry-point ───────────────────────────────────────────────────────
 
 @Composable
 fun CommunityScreen(
@@ -72,15 +72,19 @@ fun CommunityScreen(
     viewModel: CommunityViewModel = hiltViewModel(),
     onDetailClick: (communityId: String) -> Unit
 ) {
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showJoinDialog by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    // Derive managed vs joined based on currentUserId from ViewModel
-    // For now using createdBy heuristic — replace with real currentUserId when auth is wired
-    val currentUserId = uiState.communities.firstOrNull()?.createdBy
+    // Use the actual currentUserId from ViewModel state
+    val currentUserId = uiState.currentUserId
     val managedCommunities = uiState.communities.filter { it.createdBy == currentUserId }
     val joinedCommunities = uiState.communities.filter { it.createdBy != currentUserId }
+
+    LaunchedEffect(uiState.communities) {
+        Log.d("CommunityScreen", "Communities updated: ${uiState.communities}")
+    }
 
     Box(
         modifier = Modifier
@@ -329,7 +333,6 @@ private fun CommunityListItem(
     )
 }
 
-// ── Create CTA ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun CreateCommunityButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -377,7 +380,6 @@ private fun CreateCommunityButton(onClick: () -> Unit, modifier: Modifier = Modi
     }
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
 
 @Composable
 fun AdminBadge(

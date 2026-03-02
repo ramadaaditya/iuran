@@ -87,30 +87,13 @@ class RemoteTransactionRepository @Inject constructor(
     }
 
 
-    /*
-    -- ═══════════════════════════════════════════════════════════════════════════
--- Cara panggil dari RemoteTransactionRepository.kt setelah RPC dibuat:
---
--- Ganti implementasi updateTransactionStatus dengan:
---
--- postgrest.rpc("approve_transaction", buildJsonObject {
---     put("p_transaction_id", transactionId)
---     put("p_approved_by", approvedBy)
--- })
---
--- postgrest.rpc("reject_transaction", buildJsonObject {
---     put("p_transaction_id", transactionId)
---     put("p_approved_by", approvedBy)
--- })
--- ═══════════════════════════════════════════════════════════════════════════
-     */
     override suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,
         approvedBy: String
     ): Result<Transaction> {
         return try {
-            val statusString = when (newStatus) {
+            when (newStatus) {
                 TransactionStatus.PENDING -> throw Exception("Tidak bisa set status ke PENDING")
                 TransactionStatus.REJECTED ->
                     postgrest.rpc("reject_transaction", buildJsonObject {
@@ -121,7 +104,8 @@ class RemoteTransactionRepository @Inject constructor(
                 TransactionStatus.SUCCESS -> postgrest.rpc("approve_transaction", buildJsonObject {
                     put("p_transaction_id", transactionId)
                     put("p_approved_by", approvedBy)
-                })
+                }
+                )
             }
 
 
@@ -129,6 +113,7 @@ class RemoteTransactionRepository @Inject constructor(
                 .from("transactions")
                 .select {
                     filter { eq("id", transactionId) }
+                    limit(1)
                 }
                 .decodeSingle<TransactionDto>()
 

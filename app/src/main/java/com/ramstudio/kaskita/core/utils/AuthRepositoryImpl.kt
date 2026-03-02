@@ -1,7 +1,6 @@
 package com.ramstudio.kaskita.core.utils
 
 import android.app.KeyguardManager
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.util.Log
 import androidx.credentials.CredentialManager
@@ -33,6 +32,7 @@ import javax.inject.Singleton
 sealed interface AuthResponse {
     data object Success : AuthResponse
     data class Error(val message: String?) : AuthResponse
+    data object Loading : AuthResponse
 }
 
 
@@ -40,6 +40,16 @@ sealed interface AuthResponse {
 class AuthRepositoryImpl @Inject constructor(
     private val supabase: SupabaseClient
 ) : AuthRepository {
+
+    companion object {
+        private const val TAG = "AuthRepositoryImpl"
+        private const val EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Interface implementations
+    // ────────────────────────────────────────────────────────────────────────
+
     override val sessionStatus: Flow<SessionStatus>
         get() = supabase.auth.sessionStatus
 
@@ -66,6 +76,8 @@ class AuthRepositoryImpl @Inject constructor(
         )
     }
 
+    // ...existing code...
+
     override fun signUp(
         emailValue: String,
         passwordValue: String,
@@ -74,6 +86,18 @@ class AuthRepositoryImpl @Inject constructor(
         flow {
             emit(Result.Loading)
             try {
+                // Validate email format
+                if (!emailValue.matches(EMAIL_PATTERN.toRegex())) {
+                    emit(Result.Error("Format email tidak valid"))
+                    return@flow
+                }
+
+                // Validate password strength
+                if (passwordValue.length < 6) {
+                    emit(Result.Error("Password minimal 6 karakter"))
+                    return@flow
+                }
+
                 supabase.auth.signUpWith(Email) {
                     email = emailValue
                     password = passwordValue
@@ -114,6 +138,8 @@ class AuthRepositoryImpl @Inject constructor(
         UUID.randomUUID().toString()
 
     fun signInCredentialManager(context: Context): Flow<AuthResponse> = flow {
+        emit(AuthResponse.Loading)
+
         val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         val isDeviceSecure = keyguardManager.isDeviceSecure
 
@@ -175,15 +201,17 @@ class AuthRepositoryImpl @Inject constructor(
             val msg = e.message ?: "Credential Error"
             Log.e(TAG, "Gagal mendapatkan credential: $msg")
 
-            // Opsional: Cek error code "16" di sini
-            if (msg.contains("16")) {
-                emit(AuthResponse.Error("Terlalu banyak percobaan/dibatalkan. Coba clear cache Play Services."))
-            } else {
-                emit(AuthResponse.Error(msg))
+            // Check for specific error conditions
+            val errorMessage = when {
+                msg.contains("16") -> "Terlalu banyak percobaan/dibatalkan. Coba clear cache Play Services."
+                msg.contains("cancelled", ignoreCase = true) -> "Login dibatalkan"
+                msg.contains("network", ignoreCase = true) -> "Periksa koneksi internet Anda"
+                else -> msg
             }
+            emit(AuthResponse.Error(errorMessage))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get credentials ${e.localizedMessage}")
-            emit(AuthResponse.Error(e.localizedMessage))
+            emit(AuthResponse.Error(e.localizedMessage ?: "Kesalahan yang tidak diketahui"))
         }
     }
 }

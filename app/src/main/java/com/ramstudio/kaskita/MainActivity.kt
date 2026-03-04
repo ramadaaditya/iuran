@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,11 +25,15 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition {
             mainViewModel.sessionStatus.value is AuthState.Loading
         }
         super.onCreate(savedInstanceState)
+        val appPreferences = getSharedPreferences("kaskita_prefs", MODE_PRIVATE)
+        val onboardingCompleted = appPreferences.getBoolean("onboarding_completed", false)
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
                 Color.TRANSPARENT,
@@ -41,12 +48,23 @@ class MainActivity : ComponentActivity() {
         setContent {
             KasKitaTheme {
                 val authState by mainViewModel.sessionStatus.collectAsStateWithLifecycle()
+                var showOnboarding by rememberSaveable { mutableStateOf(!onboardingCompleted) }
                 val appState = rememberKaskitaState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    KasKitaApp(appState, authState)
+                    KasKitaApp(
+                        appState = appState,
+                        authState = authState,
+                        showOnboarding = showOnboarding,
+                        onOnboardingFinished = {
+                            appPreferences.edit()
+                                .putBoolean("onboarding_completed", true)
+                                .apply()
+                            showOnboarding = false
+                        }
+                    )
                 }
             }
         }

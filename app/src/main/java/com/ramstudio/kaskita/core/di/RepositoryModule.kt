@@ -14,15 +14,6 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-//    @Binds
-//    abstract fun bindCommunityRepository(
-//        impl: MockCommunityRepository
-//    ): ICommunityRepository
-
-//    @Binds
-//    abstract fun bindTransactionRepository(
-//        impl: MockTransactionRepository
-//    ): ITransactionRepository
 
     @Binds
     abstract fun bindTransactionRepository(

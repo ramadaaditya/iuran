@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Add
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +64,11 @@ import com.ramstudio.kaskita.presentation.dashboard.component.JoinCommunityDialo
 fun NavController.navigateToCommunity(navOptions: NavOptions? = null) =
     if (navOptions != null) navigate(route = ScreenRoute.Community, navOptions)
     else navigate(ScreenRoute.Community)
+
+private val FinanceBlue = Color(0xFF1D4ED8)
+private val FinanceBlueDeep = Color(0xFF0F2A6B)
+private val FinanceBlueBright = Color(0xFF38BDF8)
+private val FinanceBlueSurface = Color(0xFFEFF6FF)
 
 @Composable
 fun CommunityScreen(
@@ -160,7 +167,7 @@ private fun CommunityContent(
                 CommunityCard(
                     community = community,
                     role = "Admin",
-                    roleColor = MaterialTheme.colorScheme.primary,
+                    roleColor = FinanceBlue,
                     onClick = { community.id?.let(onDetailClick) }
                 )
             }
@@ -183,7 +190,7 @@ private fun CommunityContent(
                 CommunityCard(
                     community = community,
                     role = "Member",
-                    roleColor = MaterialTheme.colorScheme.tertiary,
+                    roleColor = FinanceBlueDeep,
                     onClick = { community.id?.let(onDetailClick) }
                 )
             }
@@ -198,15 +205,16 @@ private fun HeroCard(
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = 0.55f
-            )
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(FinanceBlueDeep, FinanceBlue)
+                    )
+                )
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -214,20 +222,21 @@ private fun HeroCard(
                 Text(
                     text = "Communities",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
                 )
                 Text(
                     text = "$totalCommunities active group${if (totalCommunities == 1) "" else "s"}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.White.copy(alpha = 0.8f)
                 )
             }
             FilledTonalButton(
                 onClick = onJoinClick,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    contentColor = MaterialTheme.colorScheme.primary
+                    containerColor = FinanceBlueBright.copy(alpha = 0.2f),
+                    contentColor = Color.White
                 )
             ) {
                 Icon(
@@ -254,8 +263,8 @@ private fun CommunityCard(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = CardDefaults.outlinedCardBorder()
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, FinanceBlue.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
@@ -267,13 +276,13 @@ private fun CommunityCard(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(community.themeColor.copy(alpha = 0.15f)),
+                    .background(FinanceBlueSurface),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = getIconForCommunity(community.name),
                     contentDescription = null,
-                    tint = community.themeColor,
+                    tint = FinanceBlue,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -301,7 +310,7 @@ private fun CommunityCard(
                 Text(
                     text = "${community.membersCount} members",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = FinanceBlueDeep.copy(alpha = 0.7f)
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
@@ -323,11 +332,9 @@ private fun CreateCommunityCard(onClick: () -> Unit) {
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(
-                alpha = 0.08f
-            )
+            containerColor = FinanceBlueSurface
         ),
-        border = CardDefaults.outlinedCardBorder()
+        border = BorderStroke(1.dp, FinanceBlue.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
@@ -339,13 +346,13 @@ private fun CreateCommunityCard(onClick: () -> Unit) {
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    .background(FinanceBlue.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = FinanceBlue
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
@@ -390,8 +397,8 @@ private fun RoleBadge(text: String, color: Color) {
 
 @Composable
 fun AdminBadge(
-    containerColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-    textColor: Color = MaterialTheme.colorScheme.primary
+    containerColor: Color = FinanceBlue.copy(alpha = 0.12f),
+    textColor: Color = FinanceBlue
 ) {
     Box(
         modifier = Modifier
@@ -424,9 +431,7 @@ private fun EmptySectionCard(message: String) {
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = 0.45f
-            )
+            containerColor = FinanceBlueSurface
         )
     ) {
         Text(

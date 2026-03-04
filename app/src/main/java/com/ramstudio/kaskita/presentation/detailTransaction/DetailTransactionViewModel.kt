@@ -8,6 +8,7 @@ import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.domain.model.User
 import com.ramstudio.kaskita.domain.model.toUiModel
 import com.ramstudio.kaskita.domain.repository.AuthRepository
+import com.ramstudio.kaskita.domain.repository.ICommunityRepository
 import com.ramstudio.kaskita.domain.repository.ITransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ data class DetailTransactionUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val user: User? = null,
+    val canManageTransaction: Boolean = false,
     val selectedTransaction: TransactionUiModel? = null,
     val isActionLoading: Boolean = false,
     val actionSuccess: String? = null
@@ -29,6 +31,7 @@ data class DetailTransactionUiState(
 @HiltViewModel
 class DetailTransactionViewModel @Inject constructor(
     private val repository: ITransactionRepository,
+    private val communityRepository: ICommunityRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DetailTransactionUiState())
@@ -41,12 +44,23 @@ class DetailTransactionViewModel @Inject constructor(
             try {
                 val transaction = repository.getTransactionById(id)
                 val currentUser = runCatching { authRepository.getUser() }.getOrNull()
+                val canManageTransaction = if (transaction != null && currentUser != null) {
+                    val community = communityRepository.getCommunityById(transaction.communityId)
+                    community?.createdBy == currentUser.id
+                } else {
+                    false
+                }
                 val transactionUiModel = transaction?.let { detail ->
+                    val memberNameById = runCatching {
+                        communityRepository.getMembersByCommunity(detail.communityId)
+                    }
+                        .getOrDefault(emptyList())
+                        .associateBy({ it.id }, { it.name })
                     detail.toUiModel().copy(
                         initiatorName = when {
-                            currentUser == null -> detail.userId
-                            detail.userId == currentUser.id -> currentUser.name
-                            else -> detail.userId
+                            memberNameById[detail.userId].isNullOrBlank().not() -> memberNameById[detail.userId].orEmpty()
+                            currentUser != null && detail.userId == currentUser.id -> currentUser.name
+                            else -> "Community Member"
                         }
                     )
                 }
@@ -54,6 +68,7 @@ class DetailTransactionViewModel @Inject constructor(
                     it.copy(
                         selectedTransaction = transactionUiModel,
                         user = currentUser,
+                        canManageTransaction = canManageTransaction,
                         isLoading = false
                     )
                 }
@@ -95,6 +110,19 @@ class DetailTransactionViewModel @Inject constructor(
         successMessage: String
     ) {
         viewModelScope.launch {
+            val state = _uiState.value
+            if (!state.canManageTransaction) {
+                _uiState.update {
+                    it.copy(error = "Hanya admin komunitas yang dapat memperbarui status transaksi.")
+                }
+                return@launch
+            }
+            if (state.selectedTransaction?.status != TransactionStatus.PENDING) {
+                _uiState.update {
+                    it.copy(error = "Status transaksi ini tidak dapat diubah lagi.")
+                }
+                return@launch
+            }
             _uiState.update { it.copy(isActionLoading = true, error = null) }
             try {
                 val currentUser = authRepository.getUser()

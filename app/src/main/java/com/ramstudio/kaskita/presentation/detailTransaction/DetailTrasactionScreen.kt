@@ -86,7 +86,6 @@ fun TransactionDetailsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalAppSnackbarHostState.current
 
-    val isAdmin = true
     LaunchedEffect(transactionId) {
         viewModel.loadTransactionDetail(transactionId)
     }
@@ -135,7 +134,7 @@ fun TransactionDetailsScreen(
         else -> {
             TransactionDetailsContent(
                 transaction = uiState.selectedTransaction!!,
-                isAdmin = isAdmin,
+                isAdmin = uiState.canManageTransaction,
                 onBackClick = onBackClick,
                 onApprove = { viewModel.approveTransaction(transactionId) },
                 onReject = { viewModel.rejectTransaction(transactionId) },

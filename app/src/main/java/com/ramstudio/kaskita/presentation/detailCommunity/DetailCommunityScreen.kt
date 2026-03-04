@@ -154,6 +154,7 @@ private fun CommunityDetailContent(
     val clipboardManager = LocalClipboardManager.current
     var showCopiedSnackbar by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val resolvedMembersCount = maxOf(community.membersCount, members.size)
 
     LaunchedEffect(showCopiedSnackbar) {
         if (showCopiedSnackbar) {
@@ -225,6 +226,7 @@ private fun CommunityDetailContent(
             item {
                 CommunityBalanceCard(
                     community = community,
+                    membersCount = resolvedMembersCount,
                     isAdmin = isAdmin,
                     onCopyCodeClick = {
                         clipboardManager.setText(AnnotatedString(community.code))
@@ -329,6 +331,7 @@ private fun CommunityDetailContent(
 @Composable
 private fun CommunityBalanceCard(
     community: Community,
+    membersCount: Int,
     isAdmin: Boolean,
     onCopyCodeClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -391,7 +394,7 @@ private fun CommunityBalanceCard(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${community.membersCount} members",
+                text = "$membersCount members",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.65f)
             )

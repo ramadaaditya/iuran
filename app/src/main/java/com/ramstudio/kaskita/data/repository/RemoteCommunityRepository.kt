@@ -168,13 +168,23 @@ class RemoteCommunityRepository @Inject constructor(
                     limit(1)
                 }
                 .decodeSingle<CommunityRow>()
+
+            val memberCount = postgrest
+                .from("community_members")
+                .select {
+                    filter { eq("community_id", communityId) }
+                }
+                .decodeList<MemberRow>()
+                .size
+
             Community(
                 id = row.id,
                 name = row.name,
                 description = row.description ?: "",
                 code = row.code,
                 createdBy = row.created_by,
-                balance = row.balance?.toDouble() ?: 0.0
+                balance = row.balance?.toDouble() ?: 0.0,
+                membersCount = memberCount
             )
         } catch (e: Exception) {
             null

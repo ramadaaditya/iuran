@@ -2,6 +2,7 @@ package com.ramstudio.kaskita.presentation.detailTransaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.domain.model.User
@@ -61,7 +62,10 @@ class DetailTransactionViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to load detail"
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal memuat detail transaksi. Silakan coba lagi."
+                        )
                     )
                 }
             }
@@ -118,14 +122,23 @@ class DetailTransactionViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isActionLoading = false,
-                                error = e.message ?: "Gagal memperbarui transaksi"
+                                error = AppErrorMapper.fromThrowable(
+                                    throwable = e,
+                                    fallback = "Gagal memperbarui transaksi. Silakan coba lagi."
+                                )
                             )
                         }
                     }
                 )
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isActionLoading = false, error = e.message ?: "Terjadi kesalahan")
+                    it.copy(
+                        isActionLoading = false,
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal memperbarui transaksi. Silakan coba lagi."
+                        )
+                    )
                 }
             }
         }

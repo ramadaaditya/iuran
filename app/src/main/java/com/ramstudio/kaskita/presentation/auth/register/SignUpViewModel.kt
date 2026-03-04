@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
 import com.ramstudio.kaskita.core.utils.AuthResponse
 import com.ramstudio.kaskita.core.utils.Result
@@ -117,7 +118,14 @@ class SignUpViewModel @Inject constructor(
                                     isLoading = false
                                 )
                             }
-                            _uiEvent.send(SignUpUiEvent.ShowSnackbar(result.message))
+                            _uiEvent.send(
+                                SignUpUiEvent.ShowSnackbar(
+                                    AppErrorMapper.fromRawMessage(
+                                        rawMessage = result.message,
+                                        fallback = "Gagal membuat akun. Silakan coba lagi."
+                                    )
+                                )
+                            )
                         }
 
                         is Result.Loading -> {

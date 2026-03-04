@@ -3,6 +3,7 @@ package com.ramstudio.kaskita.presentation.auth.signin
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
 import com.ramstudio.kaskita.core.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -89,7 +90,14 @@ class SignInViewModel @Inject constructor(
                                     isLoading = false
                                 )
                             }
-                            _uiEvent.send(SignInUiEvent.ShowSnackbar(result.message))
+                            _uiEvent.send(
+                                SignInUiEvent.ShowSnackbar(
+                                    AppErrorMapper.fromRawMessage(
+                                        rawMessage = result.message,
+                                        fallback = "Gagal masuk ke akun. Silakan coba lagi."
+                                    )
+                                )
+                            )
                         }
 
                         Result.Loading -> {

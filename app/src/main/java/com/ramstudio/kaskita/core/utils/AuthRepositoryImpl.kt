@@ -113,7 +113,14 @@ class AuthRepositoryImpl @Inject constructor(
                 Log.e(TAG, "Berhasil signup")
                 emit(Result.Success("Sign up successfully! Please check your email."))
             } catch (e: Exception) {
-                emit(Result.Error(e.message ?: "An unexpected error occurred"))
+                emit(
+                    Result.Error(
+                        AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal membuat akun. Silakan coba lagi."
+                        )
+                    )
+                )
             }
         }
 
@@ -127,7 +134,14 @@ class AuthRepositoryImpl @Inject constructor(
                 }
                 emit(Result.Success("Sign in Successfully!"))
             } catch (e: Exception) {
-                emit(Result.Error(e.localizedMessage ?: "An unexpected error occurred"))
+                emit(
+                    Result.Error(
+                        AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal masuk ke akun. Periksa kembali data Anda."
+                        )
+                    )
+                )
             }
         }
 
@@ -202,21 +216,29 @@ class AuthRepositoryImpl @Inject constructor(
             }
 
         } catch (e: GetCredentialException) {
-            // Filter error spesifik
-            val msg = e.message ?: "Credential Error"
+            val msg = e.message.orEmpty()
             Log.e(TAG, "Gagal mendapatkan credential: $msg")
 
-            // Check for specific error conditions
             val errorMessage = when {
                 msg.contains("16") -> "Terlalu banyak percobaan/dibatalkan. Coba clear cache Play Services."
                 msg.contains("cancelled", ignoreCase = true) -> "Login dibatalkan"
                 msg.contains("network", ignoreCase = true) -> "Periksa koneksi internet Anda"
-                else -> msg
+                else -> AppErrorMapper.fromThrowable(
+                    throwable = e,
+                    fallback = "Gagal login dengan Google. Silakan coba lagi."
+                )
             }
             emit(AuthResponse.Error(errorMessage))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get credentials ${e.localizedMessage}")
-            emit(AuthResponse.Error(e.localizedMessage ?: "Kesalahan yang tidak diketahui"))
+            emit(
+                AuthResponse.Error(
+                    AppErrorMapper.fromThrowable(
+                        throwable = e,
+                        fallback = "Gagal login dengan Google. Silakan coba lagi."
+                    )
+                )
+            )
         }
     }
 }

@@ -3,6 +3,7 @@ package com.ramstudio.kaskita.presentation.community
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.Result
 import com.ramstudio.kaskita.domain.repository.AuthRepository
@@ -95,7 +96,10 @@ class CommunityViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.message ?: "Terjadi kesalahan misterius"
+                            errorMessage = AppErrorMapper.fromRawMessage(
+                                rawMessage = result.message,
+                                fallback = "Gagal membuat komunitas. Silakan coba lagi."
+                            )
                         )
                     }
                 }
@@ -132,7 +136,10 @@ class CommunityViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.message ?: "Gagal bergabung"
+                            errorMessage = AppErrorMapper.fromRawMessage(
+                                rawMessage = result.message,
+                                fallback = "Gagal bergabung ke komunitas. Silakan coba lagi."
+                            )
                         )
                     }
                 }

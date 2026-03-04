@@ -28,7 +28,7 @@ enum class TopLevelDestination(
         titleTextId = R.string.Community,
         route = ScreenRoute.Community::class,
     ),
-    TRANSACTION(
+    TRANSACTIONS(
         selectedIcon = BottomBarIcons.selectedTransaction,
         unselectedIcon = BottomBarIcons.unselectedTransaction,
         iconTextId = R.string.Transaction,

@@ -77,7 +77,7 @@ class KasKitaState(
                     topLevelNavOptions
                 )
 
-                TopLevelDestination.TRANSACTION -> navController.navigateToTransactions(
+                TopLevelDestination.TRANSACTIONS -> navController.navigateToTransactions(
                     topLevelNavOptions
                 )
 
@@ -88,8 +88,8 @@ class KasKitaState(
         }
     }
 
-    fun navigateToAddTransactions(communityId: String) =
-        navController.navigate(ScreenRoute.AddTransactions(communityId))
+    fun navigateToAddTransactions(communityId: String, isAdmin: Boolean = false) =
+        navController.navigate(ScreenRoute.AddTransactions(communityId, isAdmin))
 
 
 }

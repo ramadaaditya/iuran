@@ -1,8 +1,6 @@
 package com.ramstudio.kaskita.presentation.community
 
-import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,19 +22,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Celebration
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LocalFlorist
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,16 +55,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
-import com.ramstudio.kaskita.core.utils.formatCurrency
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.presentation.dashboard.component.CreateCommunityDialog
 import com.ramstudio.kaskita.presentation.dashboard.component.JoinCommunityDialog
 
-
 fun NavController.navigateToCommunity(navOptions: NavOptions? = null) =
     if (navOptions != null) navigate(route = ScreenRoute.Community, navOptions)
     else navigate(ScreenRoute.Community)
-
 
 @Composable
 fun CommunityScreen(
@@ -72,19 +69,13 @@ fun CommunityScreen(
     viewModel: CommunityViewModel = hiltViewModel(),
     onDetailClick: (communityId: String) -> Unit
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showJoinDialog by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    // Use the actual currentUserId from ViewModel state
     val currentUserId = uiState.currentUserId
     val managedCommunities = uiState.communities.filter { it.createdBy == currentUserId }
     val joinedCommunities = uiState.communities.filter { it.createdBy != currentUserId }
-
-    LaunchedEffect(uiState.communities) {
-        Log.d("CommunityScreen", "Communities updated: ${uiState.communities}")
-    }
 
     Box(
         modifier = Modifier
@@ -131,8 +122,6 @@ fun CommunityScreen(
     }
 }
 
-// ── Main content ─────────────────────────────────────────────────────────────
-
 @Composable
 private fun CommunityContent(
     managedCommunities: List<Community>,
@@ -142,295 +131,312 @@ private fun CommunityContent(
     onCreateClick: () -> Unit,
     onDetailClick: (communityId: String) -> Unit
 ) {
+    val totalCommunities = managedCommunities.size + joinedCommunities.size
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
-        contentPadding = PaddingValues(bottom = 32.dp)
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ── Header ──────────────────────────────────────────────────────────
         item {
-            CommunityScreenHeader(
-                totalCommunities = managedCommunities.size + joinedCommunities.size,
+            HeroCard(
+                totalCommunities = totalCommunities,
                 onJoinClick = onJoinClick
             )
         }
 
-        // ── Managed communities ─────────────────────────────────────────────
         item {
-            SectionLabel(
-                label = "COMMUNITIES YOU MANAGE",
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
+            SectionTitle("Managed by You")
         }
 
         if (managedCommunities.isEmpty()) {
-            item { EmptyState(message = "You haven't created any community yet.") }
+            item {
+                EmptySectionCard("You have not created a community yet.")
+            }
         } else {
-            items(managedCommunities) { community ->
-                CommunityListItem(
+            items(managedCommunities, key = { it.id ?: it.code }) { community ->
+                CommunityCard(
                     community = community,
-                    isAdmin = true,
-                    onClick = { community.id?.let { onDetailClick(it) } }
+                    role = "Admin",
+                    roleColor = MaterialTheme.colorScheme.primary,
+                    onClick = { community.id?.let(onDetailClick) }
                 )
             }
         }
 
-        // Create new group CTA
         item {
-            CreateCommunityButton(
-                onClick = onCreateClick,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
+            CreateCommunityCard(onClick = onCreateClick)
         }
 
-        // ── Joined communities ──────────────────────────────────────────────
         item {
-            Spacer(modifier = Modifier.height(8.dp))
-            SectionLabel(
-                label = "COMMUNITIES YOU JOINED",
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
+            SectionTitle("Joined Communities")
         }
 
         if (joinedCommunities.isEmpty()) {
-            item { EmptyState(message = "Join a community using an invite code.") }
+            item {
+                EmptySectionCard("Join a community using invite code.")
+            }
         } else {
-            items(joinedCommunities) { community ->
-                CommunityListItem(
+            items(joinedCommunities, key = { it.id ?: it.code }) { community ->
+                CommunityCard(
                     community = community,
-                    isAdmin = false,
-                    onClick = { community.id?.let { onDetailClick(it) } }
+                    role = "Member",
+                    roleColor = MaterialTheme.colorScheme.tertiary,
+                    onClick = { community.id?.let(onDetailClick) }
                 )
             }
         }
     }
 }
 
-// ── Header ───────────────────────────────────────────────────────────────────
-
 @Composable
-private fun CommunityScreenHeader(
+private fun HeroCard(
     totalCommunities: Int,
     onJoinClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 28.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.55f
+            )
+        )
     ) {
-        Column {
-            Text(
-                text = "My Communities",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "$totalCommunities active ${if (totalCommunities == 1) "group" else "groups"}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        // Join via code button
-        FilledTonalButton(
-            onClick = onJoinClick,
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.primary
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Rounded.QrCodeScanner,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Join", fontWeight = FontWeight.Bold)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Communities",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = "$totalCommunities active group${if (totalCommunities == 1) "" else "s"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            FilledTonalButton(
+                onClick = onJoinClick,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    Icons.Rounded.QrCodeScanner,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Join", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
 
-// ── Community list item ───────────────────────────────────────────────────────
-
 @Composable
-private fun CommunityListItem(
+private fun CommunityCard(
     community: Community,
-    isAdmin: Boolean,
+    role: String,
+    roleColor: Color,
     onClick: () -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder()
     ) {
-        // Avatar
-        Box(
+        Row(
             modifier = Modifier
-                .size(52.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(community.themeColor.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = getIconForCommunity(community.name),
-                contentDescription = null,
-                tint = community.themeColor,
-                modifier = Modifier.size(26.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        // Name + member count
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = community.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(community.themeColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getIconForCommunity(community.name),
+                    contentDescription = null,
+                    tint = community.themeColor,
+                    modifier = Modifier.size(24.dp)
                 )
-                if (isAdmin) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AdminBadge()
-                }
             }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "${community.membersCount} members",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        // Balance
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = formatCurrency(community.balance),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = community.themeColor
-            )
-            Text(
-                text = "balance",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp
-            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = community.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    RoleBadge(text = role, color = roleColor)
+                }
+                Text(
+                    text = community.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "${community.membersCount} members",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline
+                )
+            }
         }
     }
-
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 24.dp),
-        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-    )
 }
 
-
 @Composable
-private fun CreateCommunityButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
+private fun CreateCommunityCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .border(
-                1.5.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                RoundedCornerShape(16.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary.copy(
+                alpha = 0.08f
             )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        ),
+        border = CardDefaults.outlinedCardBorder()
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Create Community",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Start a group and invite members",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Icon(
-                Icons.Default.Add,
+                imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(14.dp))
-        Column {
-            Text(
-                text = "Create a new community",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "Start a group and invite members",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-
 @Composable
-fun AdminBadge(
-    containerColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-    textColor: Color = MaterialTheme.colorScheme.primary
-) {
+private fun RoleBadge(text: String, color: Color) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(containerColor)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.12f))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Text(
-            text = "ADMIN",
-            fontSize = 9.sp,
+            text = text.uppercase(),
+            color = color,
+            fontSize = 10.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = textColor,
-            letterSpacing = 0.5.sp
+            letterSpacing = 0.4.sp
         )
     }
 }
 
 @Composable
-private fun SectionLabel(label: String, modifier: Modifier = Modifier) {
+fun AdminBadge(
+    containerColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+    textColor: Color = MaterialTheme.colorScheme.primary
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(containerColor)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = "ADMIN",
+            color = textColor,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.4.sp
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(label: String) {
     Text(
         text = label,
-        modifier = modifier,
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 0.8.sp
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
 @Composable
-private fun EmptyState(message: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
+private fun EmptySectionCard(message: String) {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.45f
+            )
+        )
     ) {
         Text(
             text = message,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
-
-// ── Community icon mapper (unchanged) ────────────────────────────────────────
 
 fun getIconForCommunity(name: String): ImageVector = when {
     name.contains("Garden", ignoreCase = true) -> Icons.Rounded.LocalFlorist
@@ -441,11 +447,13 @@ fun getIconForCommunity(name: String): ImageVector = when {
     else -> Icons.Rounded.Groups
 }
 
-
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
 @Composable
-fun CommunityScreenPreview() {
+private fun CommunityScreenPreview() {
     MaterialTheme {
-        CommunityScreen(innerPadding = PaddingValues(), onDetailClick = {})
+        CommunityScreen(
+            innerPadding = PaddingValues(),
+            onDetailClick = {}
+        )
     }
 }

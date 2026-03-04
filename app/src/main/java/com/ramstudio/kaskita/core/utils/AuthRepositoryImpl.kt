@@ -20,6 +20,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
@@ -46,14 +47,19 @@ class AuthRepositoryImpl @Inject constructor(
         private const val EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // Interface implementations
-    // ────────────────────────────────────────────────────────────────────────
-
     override val sessionStatus: Flow<SessionStatus>
         get() = supabase.auth.sessionStatus
 
     override suspend fun logout() {
+        supabase.auth.signOut()
+    }
+
+    override suspend fun deleteAccount() {
+        // Requires an SQL RPC in Supabase, typically named "delete_my_account".
+        supabase.postgrest.rpc(
+            function = "delete_my_account",
+            parameters = buildJsonObject { }
+        )
         supabase.auth.signOut()
     }
 
@@ -76,7 +82,6 @@ class AuthRepositoryImpl @Inject constructor(
         )
     }
 
-    // ...existing code...
 
     override fun signUp(
         emailValue: String,

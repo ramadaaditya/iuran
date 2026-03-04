@@ -20,15 +20,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -65,15 +66,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.formatCurrency
+import com.ramstudio.kaskita.core.utils.formatRupiahTransaction
+import com.ramstudio.kaskita.core.utils.formatTime
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.CommunityTab
+import com.ramstudio.kaskita.domain.model.Transaction
+import com.ramstudio.kaskita.domain.model.TransactionCategory
+import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.User
 import com.ramstudio.kaskita.presentation.community.AdminBadge
-import com.ramstudio.kaskita.presentation.community.getIconForCommunity
 import com.ramstudio.kaskita.ui.theme.ErrorRed
 import com.ramstudio.kaskita.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.ui.theme.WarningYellow
@@ -91,65 +97,62 @@ fun NavController.navigateToDetailCommunity(communityId: String, navOptions: Nav
 fun CommunityDetailScreen(
     communityId: String = "",
     onBackClick: () -> Unit,
-    onAddTransactionClick: () -> Unit = {},
+    onAddTransactionClick: (Boolean) -> Unit = {},
     viewModel: DetailCommunityViewModel = hiltViewModel()
 ) {
-    val currentUserId = "user_123"
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val community = Community(
-        id = "komunitas_001",
-        name = "Garden Club",
-        description = "Dedicated to purchasing organic fertilizers, new seeds, and covering monthly maintenance costs for our community garden.",
-        code = "GARDEN-A",
-        createdBy = "user_123",
-        balance = 3420.00,
-        membersCount = 12,
-        themeColor = Color(0xFF00BFA5)
-    )
+    LaunchedEffect(communityId) {
+        viewModel.load(communityId)
+    }
 
-    val dummyTransactions = listOf(
-        DummyTransaction("t1", "Monthly Dues", "Ramada Aditya", 150.00, "Oct 24", "SUCCESS"),
-        DummyTransaction("t2", "Fertilizer Purchase", "Sarah Jenkins", -45.00, "Oct 22", "SUCCESS"),
-        DummyTransaction("t3", "Garden Tools", "Michael Chen", -120.00, "Oct 21", "PENDING"),
-        DummyTransaction("t4", "Donation", "Budi Santoso", 50.00, "Oct 20", "SUCCESS"),
-        DummyTransaction("t5", "Seed Purchase", "Ramada Aditya", -30.00, "Oct 18", "REJECTED")
-    )
+    when {
+        uiState.isLoading && uiState.community == null -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
 
-    val members = listOf(
-        User("user_123", "Ramada Aditya", "Admin", "RA"),
-        User("user_456", "Sarah Jenkins", "Member", "SJ"),
-        User("user_789", "Michael Chen", "Member", "MC"),
-        User("user_101", "Budi Santoso", "Member", "BS")
-    )
+        uiState.community != null -> {
+            CommunityDetailContent(
+                community = uiState.community!!,
+                isAdmin = uiState.isAdmin,
+                transactions = uiState.transactions,
+                members = uiState.members,
+                onBackClick = onBackClick,
+                onAddTransactionClick = { onAddTransactionClick(uiState.isAdmin) },
+            )
+        }
 
-    CommunityDetailContent(
-        community = community,
-        currentUserId = currentUserId,
-        transactions = dummyTransactions,
-        members = members,
-        onBackClick = onBackClick,
-        onAddTransactionClick = onAddTransactionClick,
-    )
+        uiState.error != null -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = uiState.error ?: "Something went wrong",
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+        }
+    }
 }
 
-// ── Main content ──────────────────────────────────────────────────────────────
+// ── Main content ─���────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CommunityDetailContent(
     community: Community,
-    currentUserId: String,
-    transactions: List<DummyTransaction>,
+    isAdmin: Boolean,
+    transactions: List<Transaction>,
     members: List<User>,
     onBackClick: () -> Unit,
     onAddTransactionClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isAdmin = community.createdBy == currentUserId
     var selectedTab by remember { mutableStateOf(CommunityTab.TRANSACTIONS) }
     val clipboardManager = LocalClipboardManager.current
     var showCopiedSnackbar by remember { mutableStateOf(false) }
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(showCopiedSnackbar) {
@@ -190,13 +193,12 @@ private fun CommunityDetailContent(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
         floatingActionButton = {
-            // Only show FAB for transactions tab
             if (selectedTab == CommunityTab.TRANSACTIONS) {
                 ExtendedFloatingActionButton(
                     onClick = onAddTransactionClick,
@@ -218,9 +220,8 @@ private fun CommunityDetailContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = 100.dp) // space for FAB
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
-            // ── Balance card ─────────────────────────────────────────────────
             item {
                 CommunityBalanceCard(
                     community = community,
@@ -233,19 +234,16 @@ private fun CommunityDetailContent(
                 )
             }
 
-            // ── Summary stats (income / expense) — visible for admin ─────────
             if (isAdmin) {
                 item {
                     AdminSummaryRow(
                         transactions = transactions,
-                        themeColor = community.themeColor,
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
-            // ── Tabs ─────────────────────────────────────────────────────────
             stickyHeader {
                 Surface(
                     color = MaterialTheme.colorScheme.background,
@@ -268,7 +266,7 @@ private fun CommunityDetailContent(
                             )
                         }
                     ) {
-                        CommunityTab.values().forEach { tab ->
+                        CommunityTab.entries.forEach { tab ->
                             Tab(
                                 selected = selectedTab == tab,
                                 onClick = { selectedTab = tab },
@@ -286,34 +284,39 @@ private fun CommunityDetailContent(
                 }
             }
 
-            // ── Tab content ───────────────────────────────────────────────────
             when (selectedTab) {
                 CommunityTab.TRANSACTIONS -> {
                     if (transactions.isEmpty()) {
                         item {
                             CommunityEmptyState(
-                                icon = Icons.Rounded.ReceiptLong,
+                                icon = Icons.AutoMirrored.Rounded.ReceiptLong,
                                 title = "No transactions yet",
                                 subtitle = "Tap 'Add Transaction' to record the first one."
                             )
                         }
                     } else {
                         items(transactions) { tx ->
-                            TransactionItem(
-                                tx = tx,
-                                themeColor = community.themeColor,
-                                isAdmin = isAdmin
-                            )
+                            TransactionItem(tx = tx)
                         }
                     }
                 }
 
                 CommunityTab.MEMBERS -> {
-                    items(members) { member ->
-                        MemberItem(
-                            member = member,
-                            themeColor = community.themeColor
-                        )
+                    if (members.isEmpty()) {
+                        item {
+                            CommunityEmptyState(
+                                icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+                                title = "No members found",
+                                subtitle = "Share the invite code to add members."
+                            )
+                        }
+                    } else {
+                        items(members) { member ->
+                            MemberItem(
+                                member = member,
+                                themeColor = community.themeColor
+                            )
+                        }
                     }
                 }
             }
@@ -343,44 +346,6 @@ private fun CommunityBalanceCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Community icon + name
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color.White.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = getIconForCommunity(community.name),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = community.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
-                if (isAdmin) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AdminBadge(
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        textColor = Color.White
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "TOTAL BALANCE",
@@ -392,7 +357,7 @@ private fun CommunityBalanceCard(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = formatCurrency(community.balance),
-                style = MaterialTheme.typography.displaySmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -438,15 +403,16 @@ private fun CommunityBalanceCard(
 
 @Composable
 private fun AdminSummaryRow(
-    transactions: List<DummyTransaction>,
-    themeColor: Color,
+    transactions: List<Transaction>,
     modifier: Modifier = Modifier
 ) {
-    val totalIncome = transactions.filter { it.amount > 0 && it.status == "SUCCESS" }
+    val totalIncome = transactions
+        .filter { it.type == TransactionCategory.INCOME && it.status == TransactionStatus.SUCCESS }
         .sumOf { it.amount }
-    val totalExpense = transactions.filter { it.amount < 0 && it.status == "SUCCESS" }
+    val totalExpense = transactions
+        .filter { it.type == TransactionCategory.EXPENSE && it.status == TransactionStatus.SUCCESS }
         .sumOf { it.amount }
-    val pendingCount = transactions.count { it.status == "PENDING" }
+    val pendingCount = transactions.count { it.status == TransactionStatus.PENDING }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -569,10 +535,12 @@ private fun PendingApprovalBanner(count: Int, onClick: () -> Unit) {
 
 @Composable
 private fun TransactionItem(
-    tx: DummyTransaction,
-    themeColor: Color,
-    isAdmin: Boolean
+    tx: Transaction,
 ) {
+    val isIncome = tx.type == TransactionCategory.INCOME
+    val amountText = if (isIncome) "+${formatRupiahTransaction(tx.amount)}"
+    else formatRupiahTransaction(-tx.amount)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -587,23 +555,23 @@ private fun TransactionItem(
                 .clip(CircleShape)
                 .background(
                     when (tx.status) {
-                        "SUCCESS" -> if (tx.amount > 0) SuccessGreen.copy(alpha = 0.12f)
+                        TransactionStatus.SUCCESS -> if (isIncome) SuccessGreen.copy(alpha = 0.12f)
                         else MaterialTheme.colorScheme.surfaceVariant
 
-                        "PENDING" -> WarningYellow.copy(alpha = 0.12f)
-                        else -> ErrorRed.copy(alpha = 0.1f)
+                        TransactionStatus.PENDING -> WarningYellow.copy(alpha = 0.12f)
+                        TransactionStatus.REJECTED -> ErrorRed.copy(alpha = 0.1f)
                     }
                 ),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = tx.submittedBy.take(2).uppercase(),
+                text = tx.userId.take(2).uppercase(),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = when (tx.status) {
-                    "SUCCESS" -> if (tx.amount > 0) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                    "PENDING" -> WarningYellow
-                    else -> ErrorRed
+                    TransactionStatus.SUCCESS -> if (isIncome) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    TransactionStatus.PENDING -> WarningYellow
+                    TransactionStatus.REJECTED -> ErrorRed
                 }
             )
         }
@@ -612,13 +580,13 @@ private fun TransactionItem(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = tx.title,
+                text = tx.description ?: if (isIncome) "Pemasukan" else "Pengeluaran",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "${tx.submittedBy} · ${tx.date}",
+                text = formatTime(tx.createdAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -626,11 +594,10 @@ private fun TransactionItem(
 
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = if (tx.amount > 0) "+${formatCurrency(tx.amount)}"
-                else formatCurrency(tx.amount),
+                text = amountText,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.ExtraBold,
-                color = if (tx.amount > 0) SuccessGreen else MaterialTheme.colorScheme.onBackground
+                color = if (isIncome) SuccessGreen else MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(3.dp))
             StatusBadge(status = tx.status)
@@ -644,12 +611,21 @@ private fun TransactionItem(
 }
 
 @Composable
-private fun StatusBadge(status: String) {
+private fun StatusBadge(status: TransactionStatus) {
     val (bgColor, textColor, label) = when (status) {
-        "SUCCESS" -> Triple(SuccessGreen.copy(alpha = 0.12f), SuccessGreen, "SUCCESS")
-        "PENDING" -> Triple(WarningYellow.copy(alpha = 0.12f), WarningYellow, "PENDING")
-        "REJECTED" -> Triple(ErrorRed.copy(alpha = 0.1f), ErrorRed, "REJECTED")
-        else -> Triple(Color.LightGray.copy(alpha = 0.2f), Color.Gray, status)
+        TransactionStatus.SUCCESS -> Triple(
+            SuccessGreen.copy(alpha = 0.12f),
+            SuccessGreen,
+            "SUCCESS"
+        )
+
+        TransactionStatus.PENDING -> Triple(
+            WarningYellow.copy(alpha = 0.12f),
+            WarningYellow,
+            "PENDING"
+        )
+
+        TransactionStatus.REJECTED -> Triple(ErrorRed.copy(alpha = 0.1f), ErrorRed, "REJECTED")
     }
 
     Box(
@@ -675,7 +651,8 @@ private fun MemberItem(
     member: User,
     themeColor: Color
 ) {
-    val isAdmin = member.role == "Admin"
+    val isAdmin = member.role.equals("admin", ignoreCase = true)
+    val roleLabel = if (isAdmin) "Admin" else "Member"
 
     Row(
         modifier = Modifier
@@ -712,7 +689,7 @@ private fun MemberItem(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = member.role,
+                text = roleLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isAdmin) themeColor else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (isAdmin) FontWeight.SemiBold else FontWeight.Normal
@@ -771,26 +748,33 @@ private fun CommunityEmptyState(
     }
 }
 
-// ── Data model (temporary until Transaction domain model is ready) ────────────
-
-data class DummyTransaction(
-    val id: String,
-    val title: String,
-    val submittedBy: String,
-    val amount: Double,
-    val date: String,
-    val status: String // "SUCCESS" | "PENDING" | "REJECTED"
-)
-
 // ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 fun CommunityDetailScreenPreview() {
+    val previewCommunity = Community(
+        id = "preview_id",
+        name = "Garden Club",
+        description = "Our community garden.",
+        code = "GARDEN-A",
+        createdBy = "user_123",
+        balance = 3420.00,
+        membersCount = 4,
+        themeColor = Color(0xFF00BFA5)
+    )
+    val previewMembers = listOf(
+        User("user_123", "Ramada Aditya", "Admin", "RA"),
+        User("user_456", "Sarah Jenkins", "Member", "SJ"),
+    )
     MaterialTheme {
-        CommunityDetailScreen(
-            communityId = "preview",
-            onBackClick = {}
+        CommunityDetailContent(
+            community = previewCommunity,
+            isAdmin = true,
+            transactions = emptyList(),
+            members = previewMembers,
+            onBackClick = {},
+            onAddTransactionClick = {},
         )
     }
 }

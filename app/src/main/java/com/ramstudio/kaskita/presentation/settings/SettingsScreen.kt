@@ -1,8 +1,11 @@
 package com.ramstudio.kaskita.presentation.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,24 +16,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.Article
+import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,15 +52,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
+import com.ramstudio.kaskita.presentation.settings.component.DeleteAccountConfirmationDialog
 import com.ramstudio.kaskita.presentation.settings.component.LogoutConfirmationDialog
 import com.ramstudio.kaskita.presentation.settings.component.ProfileCard
 
-val TextMainBlack = Color(0xFF1A1A1A)
-val TextSubGrey = Color(0xFF8E8E93)
-val BackgroundLightGrey = Color(0xFFF5F6F8)
-val DividerColor = Color(0xFFE5E5EA)
-val PrimaryBlue = Color(0xFF0014CC)
-val DangerRed = Color(0xFFFF2D70)
+val TextMainBlack = Color(0xFF15171A)
+val TextSubGrey = Color(0xFF69707A)
+val BackgroundSoft = Color(0xFFF3F5F8)
+val CardBorder = Color(0xFFE4E8EF)
+val PrimaryBlue = Color(0xFF0A49D1)
+val DangerRed = Color(0xFFD92D20)
 
 fun NavController.navigateToSettings(navOptions: NavOptions? = null) =
     if (navOptions != null) {
@@ -64,93 +76,103 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var deleteRequestInFlight by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(state.isDeletingAccount, state.error, deleteRequestInFlight) {
+        if (deleteRequestInFlight && !state.isDeletingAccount && state.error == null) {
+            showDeleteAccountDialog = false
+            deleteRequestInFlight = false
+        }
+    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(BackgroundSoft)
             .padding(innerPadding)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            HeaderPanel()
+
             ProfileCard(
                 user = state.user,
-                onEditClick = { /* TODO: Handle Edit Profile */ }
+                onEditClick = { }
             )
 
-            // 2. Account Section
-//            SettingsSectionTitle(title = "ACCOUNT")
-//
-//            SettingsItemRow(
-//                title = "Notifications",
-//                icon = Icons.Outlined.Notifications,
-//                trailing = {
-//                    Switch(
-//                        checked = notificationsEnabled,
-//                        onCheckedChange = { notificationsEnabled = it },
-//                        colors = SwitchDefaults.colors(checkedTrackColor = PrimaryBlue)
-//                    )
-//                }
-//            )
-//            HorizontalDivider(color = DividerColor)
-//            SettingsItemRow(
-//                title = "Security & Privacy",
-//                icon = Icons.Outlined.Lock,
-//                onClick = { /* TODO */ },
-//                trailing = { SettingsChevron() }
-//            )
-//            HorizontalDivider(color = DividerColor)
-//            SettingsItemRow(
-//                title = "Payment Methods",
-//                icon = Icons.Outlined.AccountBalanceWallet,
-//                onClick = { /* TODO */ },
-//                trailing = { SettingsChevron() }
-//            )
-//            HorizontalDivider(color = DividerColor)
-//
-//            // 3. System Section
-//            SettingsSectionTitle(title = "SYSTEM")
-//
-//            SettingsItemRow(
-//                title = "Language",
-//                icon = Icons.Outlined.Language,
-//                onClick = { /* TODO */ },
-//                trailing = { Text("English (US)", color = TextSubGrey, fontSize = 14.sp) }
-//            )
-//            HorizontalDivider(color = DividerColor)
-            SettingsItemRow(
-                title = "Terms of Service",
-                icon = Icons.Outlined.Article,
-                onClick = { /* TODO */ },
-                trailing = {
-                    Icon(
-                        imageVector = Icons.Outlined.OpenInNew,
-                        contentDescription = "External Link",
-                        tint = TextSubGrey,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            )
-            HorizontalDivider(color = DividerColor)
+            SettingsSectionCard(title = "Support") {
+                SettingsItemRow(
+                    title = "Terms of Service",
+                    subtitle = "Read policy and app terms",
+                    icon = Icons.Outlined.Article,
+                    onClick = { },
+                    trailing = {
+                        Icon(
+                            imageVector = Icons.Outlined.OpenInNew,
+                            contentDescription = "Open Terms",
+                            tint = TextSubGrey,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
+            }
 
-            // 4. Danger Zone Section
-//            SettingsSectionTitle(title = "DANGER ZONE", textColor = DangerRed)
+            SettingsSectionCard(
+                title = "Danger Zone",
+                titleColor = DangerRed
+            ) {
+                SettingsItemRow(
+                    title = "Delete Account",
+                    subtitle = "Permanently remove your account data",
+                    icon = Icons.Outlined.DeleteForever,
+                    titleColor = DangerRed,
+                    iconTint = DangerRed,
+                    onClick = {
+                        if (!state.isDeletingAccount) {
+                            showDeleteAccountDialog = true
+                        }
+                    },
+                    trailing = {
+                        if (state.isDeletingAccount) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                color = DangerRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                )
 
-            SettingsItemRow(
-                title = "Log Out",
-                icon = Icons.AutoMirrored.Outlined.Logout,
-                titleColor = DangerRed,
-                iconTint = DangerRed,
-                onClick = { showLogoutDialog = true }
-            )
-            HorizontalDivider(color = DividerColor)
+                HorizontalDivider(color = CardBorder)
 
-            Spacer(modifier = Modifier.height(32.dp))
+                SettingsItemRow(
+                    title = "Log Out",
+                    subtitle = "Sign out from this device",
+                    icon = Icons.AutoMirrored.Outlined.Logout,
+                    titleColor = DangerRed,
+                    iconTint = DangerRed,
+                    onClick = { showLogoutDialog = true }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         if (showLogoutDialog) {
@@ -162,30 +184,90 @@ fun SettingsScreen(
                 onDismiss = { showLogoutDialog = false }
             )
         }
+
+        if (showDeleteAccountDialog) {
+            DeleteAccountConfirmationDialog(
+                isLoading = state.isDeletingAccount,
+                onConfirm = {
+                    deleteRequestInFlight = true
+                    viewModel.deleteAccount()
+                },
+                onDismiss = {
+                    if (!state.isDeletingAccount) {
+                        showDeleteAccountDialog = false
+                        deleteRequestInFlight = false
+                    }
+                }
+            )
+        }
     }
 }
 
-
 @Composable
-fun SettingsSectionTitle(
-    title: String,
-    textColor: Color = TextSubGrey,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = title.uppercase(),
-        fontSize = 12.sp,
-        fontStyle = MaterialTheme.typography.titleSmall.fontStyle,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.sp,
-        color = textColor,
-        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp)
-    )
+private fun HeaderPanel() {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent,
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFFEAF1FF), Color(0xFFF7FAFF))
+                    )
+                )
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextMainBlack
+                )
+                Text(
+                    text = "Manage your profile and account security",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSubGrey
+                )
+            }
+        }
+    }
 }
 
 @Composable
-fun SettingsItemRow(
+private fun SettingsSectionCard(
     title: String,
+    titleColor: Color = TextSubGrey,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = title.uppercase(),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = titleColor,
+            letterSpacing = 0.8.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(content = content)
+        }
+    }
+}
+
+@Composable
+private fun SettingsItemRow(
+    title: String,
+    subtitle: String,
     icon: ImageVector,
     titleColor: Color = TextMainBlack,
     iconTint: Color = TextMainBlack,
@@ -196,42 +278,42 @@ fun SettingsItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = onClick != null, onClick = onClick ?: {})
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = titleColor,
-            modifier = Modifier.weight(1f)
-        )
-
-        if (trailing != null) {
-            trailing()
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(color = BackgroundSoft, shape = RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
+            )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = titleColor,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSubGrey
+            )
+        }
+
+        trailing?.invoke()
     }
 }
-
-@Composable
-fun SettingsChevron() {
-    Icon(
-        imageVector = Icons.Default.ChevronRight,
-        contentDescription = "Navigate",
-        tint = TextSubGrey,
-        modifier = Modifier.size(20.dp)
-    )
-}
-
 
 @Preview(showBackground = true, device = Devices.PIXEL_4)
 @Composable

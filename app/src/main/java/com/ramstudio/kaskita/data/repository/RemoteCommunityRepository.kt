@@ -1,9 +1,11 @@
 package com.ramstudio.kaskita.data.repository
 
 import android.os.Build
+import com.ramstudio.kaskita.core.utils.AvatarUtils
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.JoinResponse
 import com.ramstudio.kaskita.domain.model.Result
+import com.ramstudio.kaskita.domain.model.User
 import com.ramstudio.kaskita.domain.repository.ICommunityRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
@@ -108,6 +110,19 @@ class RemoteCommunityRepository @Inject constructor(
             }
             .decodeList<CommunityRow>()
 
+        val communityMemberRows = postgrest
+            .from("community_members")
+            .select {
+                filter {
+                    isIn("community_id", communityIds)
+                }
+            }
+            .decodeList<MemberRow>()
+
+        val memberCountByCommunityId = communityMemberRows
+            .groupingBy { it.community_id }
+            .eachCount()
+
         emit(
             communities.map {
                 Community(
@@ -115,10 +130,70 @@ class RemoteCommunityRepository @Inject constructor(
                     name = it.name,
                     description = it.description ?: "",
                     code = it.code,
-                    balance = it.balance?.toDouble() ?: 0.0
+                    createdBy = it.created_by,
+                    balance = it.balance?.toDouble() ?: 0.0,
+                    membersCount = memberCountByCommunityId[it.id] ?: 0
                 )
             }
         )
+    }
+
+    override suspend fun getCommunityById(communityId: String): Community? {
+        return try {
+            val row = postgrest
+                .from("communities")
+                .select {
+                    filter { eq("id", communityId) }
+                    limit(1)
+                }
+                .decodeSingle<CommunityRow>()
+            Community(
+                id = row.id,
+                name = row.name,
+                description = row.description ?: "",
+                code = row.code,
+                createdBy = row.created_by,
+                balance = row.balance?.toDouble() ?: 0.0
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun getMembersByCommunity(communityId: String): List<User> {
+        return try {
+            val memberRows = postgrest
+                .from("community_members")
+                .select {
+                    filter { eq("community_id", communityId) }
+                }
+                .decodeList<MemberRow>()
+
+            val userIds = memberRows.map { it.user_id }
+            if (userIds.isEmpty()) return emptyList()
+
+            val adminId = getCommunityById(communityId)?.createdBy
+
+            val profiles = postgrest
+                .from("profiles")
+                .select {
+                    filter { isIn("id", userIds) }
+                }
+                .decodeList<ProfileRow>()
+
+            profiles.map { profile ->
+                val isAdmin = profile.id == adminId
+                User(
+                    id = profile.id,
+                    name = profile.full_name ?: "Unknown",
+                    role = if (isAdmin) "Admin" else "Member",
+                    initial = AvatarUtils.getInitials(profile.full_name),
+                    email = profile.email
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }
 
@@ -142,6 +217,13 @@ private data class CommunityRow(
     val name: String,
     val description: String? = null,
     val code: String,
-    val balance: Long? = 0
+    val balance: Long? = 0,
+    val created_by: String? = null
 )
 
+@Serializable
+private data class ProfileRow(
+    val id: String,
+    val full_name: String? = null,
+    val email: String? = null
+)

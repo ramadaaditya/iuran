@@ -6,12 +6,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.ramstudio.kaskita.core.utils.formatRupiahTransaction
+import com.ramstudio.kaskita.core.utils.formatTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
-import java.util.Date
-import java.util.Locale
 
 val PrimaryGreen = Color(0xFF2E7D32)
 val IconBgGreen = Color(0xFFC8E6C9)
@@ -42,8 +41,8 @@ data class TransactionUiModel(
     val iconBgColor: Color,
     val title: String,
     val subtitle: String,
-    val amount: Double,       // raw amount — use this for calculations
-    val amountText: String,   // display string — use this for UI only
+    val amount: Double,
+    val amountText: String,
     val isPositive: Boolean,
     val timeText: String,
     val status: TransactionStatus,
@@ -67,24 +66,13 @@ fun Transaction.toUiModel(): TransactionUiModel {
         title = description ?: if (isPositive) "Pemasukan" else "Pengeluaran",
         subtitle = "Status: $status",
         amount = amount,
-        amountText = formatCurrency(amount, isPositive),
+        amountText = formatRupiahTransaction(amount),
         isPositive = isPositive,
         timeText = formatTime(createdAt),
         category = type,
         initiatorName = userId,
-        status = status
+        status = status,
     )
-}
-
-fun formatCurrency(amount: Double, isPositive: Boolean): String {
-    val prefix = if (isPositive) "+" else "-"
-    val formatted = "%,.0f".format(kotlin.math.abs(amount))
-    return "${prefix}Rp $formatted"
-}
-
-fun formatTime(timestamp: Long): String {
-    return SimpleDateFormat("dd MMM", Locale.getDefault())
-        .format(Date(timestamp))
 }
 
 fun TransactionDto.toDomain(): Transaction {

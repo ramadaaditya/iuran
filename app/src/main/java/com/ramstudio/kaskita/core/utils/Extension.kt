@@ -1,15 +1,31 @@
 package com.ramstudio.kaskita.core.utils
 
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 fun formatCurrency(nominal: Double): String {
-    return try {
-        val indonesianLocale = Locale("id", "ID")
-        val currencyFormatter = NumberFormat.getCurrencyInstance(indonesianLocale)
-        currencyFormatter.format(nominal)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        "Rp 0"
+    val localeID = Locale("id", "ID")
+    val formatter = NumberFormat.getCurrencyInstance(localeID).apply {
+        maximumFractionDigits = 0
+        minimumFractionDigits = 0
     }
+    return formatter.format(nominal)
+}
+
+fun formatRupiahTransaction(amount: Double): String {
+    val localeID = Locale("id", "ID")
+    val formatter = NumberFormat.getCurrencyInstance(localeID).apply {
+        maximumFractionDigits = 0
+        minimumFractionDigits = 0
+    }
+
+    val formatted = formatter.format(kotlin.math.abs(amount))
+    return if (amount >= 0) "+$formatted" else "-$formatted"
+}
+
+fun formatTime(timestamp: Long): String {
+    return SimpleDateFormat("dd MMM", Locale.getDefault())
+        .format(Date(timestamp))
 }

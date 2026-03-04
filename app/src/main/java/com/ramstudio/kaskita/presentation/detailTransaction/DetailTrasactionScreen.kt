@@ -48,13 +48,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,10 +62,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
+import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.presentation.transaction.TransactionStatusChip
-import com.ramstudio.kaskita.presentation.transaction.TransactionViewModel
 import com.ramstudio.kaskita.ui.theme.ErrorRed
 import com.ramstudio.kaskita.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.ui.theme.WarningYellow
@@ -81,11 +81,10 @@ fun TransactionDetailsScreen(
     transactionId: String,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TransactionViewModel = hiltViewModel()
+    viewModel: DetailTransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalAppSnackbarHostState.current
-    val scope = rememberCoroutineScope()
 
     val isAdmin = true
     LaunchedEffect(transactionId) {
@@ -97,6 +96,13 @@ fun TransactionDetailsScreen(
             snackbarHostState.showSnackbar(message)
             viewModel.clearActionSuccess()
             onBackClick()
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearError()
         }
     }
 
@@ -202,25 +208,15 @@ fun TransactionDetailsContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(8.dp))
-
-            // ── Hero amount section ───────────────────────────────────────────
             AmountHeroSection(transaction = transaction)
-
             Spacer(modifier = Modifier.height(28.dp))
-
-            // ── Details card ──────────────────────────────────────────────────
             TransactionDetailsCard(transaction = transaction)
-
             Spacer(modifier = Modifier.height(20.dp))
-
-            // ── Evidence section ──────────────────────────────────────────────
             EvidenceSection()
-
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
-    // ── Reject confirmation dialog ────────────────────────────────────────────
     if (showRejectDialog) {
         RejectConfirmDialog(
             onDismiss = { showRejectDialog = false },
@@ -368,7 +364,7 @@ private fun DetailRow(label: String, value: String) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.widthIn(max = 200.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.End
+            textAlign = TextAlign.End
         )
     }
 }
@@ -496,7 +492,6 @@ private fun AdminActionBar(
     }
 }
 
-// ── Reject confirmation dialog ────────────────────────────────────────────────
 
 @Composable
 private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
@@ -522,7 +517,7 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
             Text(
                 "Reject Transaction?",
                 fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -531,7 +526,7 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                 "This action cannot be undone. The transaction will be marked as rejected.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
         },
@@ -560,9 +555,26 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 @Composable
 fun TransactionDetailsScreenPreview() {
     MaterialTheme {
-        TransactionDetailsScreen(
-            transactionId = "",
-            onBackClick = {}
+        TransactionDetailsContent(
+            onBackClick = {},
+            transaction = TransactionUiModel(
+                id = "TRX-001",
+                icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+                iconBgColor = Color(0xFF6650A4),
+                title = "Pembayaran Iuran Bulanan",
+                subtitle = "Monas",
+                amount = 40000.00,
+                amountText = "Rp 40.000",
+                isPositive = false,
+                timeText = "12 Jul 2025, 10:30",
+                status = TransactionStatus.PENDING,
+                category = TransactionCategory.EXPENSE,
+                initiatorName = "Aditya Ramada"
+            ),
+            isAdmin = true,
+            onApprove = {},
+            onReject = {},
+            isActionLoading = false
         )
     }
 }

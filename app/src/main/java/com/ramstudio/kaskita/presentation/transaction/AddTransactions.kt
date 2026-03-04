@@ -73,6 +73,7 @@ fun AddTransactionScreen(
     onCloseClick: () -> Unit,
     onSuccess: () -> Unit,
     modifier: Modifier = Modifier,
+    isAdmin: Boolean = false,
     viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
 
@@ -105,8 +106,9 @@ fun AddTransactionScreen(
         onDescriptionChange = viewModel::onDescriptionChange,
         onAttachReceipt = viewModel::onReceiptAttached,
         onCloseClick = onCloseClick,
-        onSubmitClick = { viewModel.submitTransaction(communityId) },
+        onSubmitClick = { viewModel.submitTransaction(communityId, isAdmin) },
         isLoading = uiState.isLoading,
+        isAdmin = isAdmin,
     )
 }
 
@@ -125,7 +127,8 @@ fun AddTransactionContent(
     onAttachReceipt: () -> Unit,
     onCloseClick: () -> Unit,
     onSubmitClick: () -> Unit,
-    isLoading: Boolean
+    isLoading: Boolean,
+    isAdmin: Boolean = false
 ) {
     val accentColor by animateColorAsState(
         targetValue = if (transactionType == TransactionCategory.INCOME) SuccessGreen else ErrorRed,
@@ -182,16 +185,15 @@ fun AddTransactionContent(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Type toggle ───────────────────────────────────────────────────
             TypeToggle(
                 selected = transactionType,
                 onSelect = onTypeChange,
-                accentColor = accentColor
+                accentColor = accentColor,
+                isAdmin = isAdmin
             )
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ── Amount input ──────────────────────────────────────────────────
             AmountInput(
                 amount = amount,
                 onAmountChange = onAmountChange,
@@ -259,45 +261,59 @@ fun AddTransactionContent(
 private fun TypeToggle(
     selected: TransactionCategory,
     onSelect: (TransactionCategory) -> Unit,
-    accentColor: Color
+    accentColor: Color,
+    isAdmin: Boolean = false
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(4.dp)
-    ) {
-        TransactionCategory.values().forEach { type ->
-            val isSelected = selected == type
-            val bgColor by animateColorAsState(
-                targetValue = if (isSelected) accentColor else Color.Transparent,
-                animationSpec = tween(250),
-                label = "typeBg"
-            )
-            val textColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                animationSpec = tween(250),
-                label = "typeText"
-            )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(bgColor)
-                    .clickable { onSelect(type) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = type.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor,
-                    letterSpacing = 0.5.sp
+    val visibleTypes = if (isAdmin) TransactionCategory.values().toList()
+    else listOf(TransactionCategory.INCOME)
+
+    // If the current selection is EXPENSE but user is not admin, force INCOME
+    LaunchedEffect(isAdmin) {
+        if (!isAdmin && selected == TransactionCategory.EXPENSE) {
+            onSelect(TransactionCategory.INCOME)
+        }
+    }
+
+    // Only show the toggle row when there are multiple options (admin)
+    if (visibleTypes.size > 1) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(4.dp)
+        ) {
+            visibleTypes.forEach { type ->
+                val isSelected = selected == type
+                val bgColor by animateColorAsState(
+                    targetValue = if (isSelected) accentColor else Color.Transparent,
+                    animationSpec = tween(250),
+                    label = "typeBg"
                 )
+                val textColor by animateColorAsState(
+                    targetValue = if (isSelected) Color.White
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    animationSpec = tween(250),
+                    label = "typeText"
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(bgColor)
+                        .clickable { onSelect(type) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = type.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        letterSpacing = 0.5.sp
+                    )
+                }
             }
         }
     }
@@ -582,10 +598,44 @@ private fun SubmitBar(
 
 // ── Preview ───────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Member view")
 @Composable
-fun AddTransactionScreenPreview() {
+fun AddTransactionScreenMemberPreview() {
     MaterialTheme {
-        AddTransactionScreen(onCloseClick = {}, communityId = "", onSuccess = {})
+        AddTransactionContent(
+            transactionType = TransactionCategory.INCOME,
+            amount = "",
+            description = "",
+            hasReceiptAttached = false,
+            onTypeChange = {},
+            onAmountChange = {},
+            onDescriptionChange = {},
+            onAttachReceipt = {},
+            onCloseClick = {},
+            onSubmitClick = {},
+            isLoading = false,
+            isAdmin = false
+        )
+    }
+}
+
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Admin view")
+@Composable
+fun AddTransactionScreenAdminPreview() {
+    MaterialTheme {
+        AddTransactionContent(
+            transactionType = TransactionCategory.EXPENSE,
+            amount = "40000",
+            description = "Pembelian alat",
+            hasReceiptAttached = true,
+            onTypeChange = {},
+            onAmountChange = {},
+            onDescriptionChange = {},
+            onAttachReceipt = {},
+            onCloseClick = {},
+            onSubmitClick = {},
+            isLoading = false,
+            isAdmin = true
+        )
     }
 }

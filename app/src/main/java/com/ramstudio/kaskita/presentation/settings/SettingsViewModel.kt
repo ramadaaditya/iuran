@@ -17,6 +17,7 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val isLoading: Boolean = false,
+    val isDeletingAccount: Boolean = false,
     val user: User? = null,
     val error: String? = null
 )
@@ -51,7 +52,31 @@ class SettingsViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
-            authRepository.logout()
+            try {
+                authRepository.logout()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.message ?: "Failed to logout")
+                }
+            }
+        }
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeletingAccount = true, error = null) }
+            try {
+                authRepository.deleteAccount()
+                _uiState.update { it.copy(isDeletingAccount = false) }
+            } catch (e: Exception) {
+                Log.e(TAG, "deleteAccount: ${e.message}")
+                _uiState.update {
+                    it.copy(
+                        isDeletingAccount = false,
+                        error = e.message ?: "Failed to delete account"
+                    )
+                }
+            }
         }
     }
 }

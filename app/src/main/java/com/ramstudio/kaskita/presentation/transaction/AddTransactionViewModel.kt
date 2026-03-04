@@ -55,6 +55,7 @@ class AddTransactionViewModel @Inject constructor(
             it.copy(
                 amount = "",
                 description = "",
+                transactionType = TransactionCategory.INCOME,
                 hasReceipt = false,
                 isSuccess = false,
                 errorMessage = null
@@ -66,7 +67,7 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    fun submitTransaction(communityId: String) {
+    fun submitTransaction(communityId: String, isAdmin: Boolean) {
         val state = _uiState.value
 
         Log.d("AddTxVM", "submitTransaction called — communityId: '$communityId'")
@@ -89,6 +90,11 @@ class AddTransactionViewModel @Inject constructor(
         if (!state.hasReceipt) {
             Log.d("AddTxVM", "BLOCKED: no receipt")
             _uiState.update { it.copy(errorMessage = "Bukti transfer wajib dilampirkan") }
+            return
+        }
+        if (!isAdmin && state.transactionType == TransactionCategory.EXPENSE) {
+            Log.d("AddTxVM", "BLOCKED: non-admin attempted EXPENSE")
+            _uiState.update { it.copy(errorMessage = "Hanya admin yang bisa membuat transaksi pengeluaran") }
             return
         }
 

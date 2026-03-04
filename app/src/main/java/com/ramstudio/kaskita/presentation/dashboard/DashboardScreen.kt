@@ -21,12 +21,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -213,17 +213,18 @@ val previewEmptyUiState = DashboardUiState(
 fun DashboardScreen(
     innerPadding: PaddingValues,
     onTransactionClick: (String) -> Unit,
+    onAddTransactionClick: (communityId: String, isAdmin: Boolean) -> Unit,
     onPendingApprovalsClick: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val currentUserId = uiState.currentUserId
 
     DashboardContent(
         uiState = uiState,
         modifier = Modifier.padding(innerPadding),
         onCommunitySelected = viewModel::selectCommunity,
         onTransactionClick = onTransactionClick,
+        onAddTransactionClick = onAddTransactionClick,
         onPendingApprovalsClick = onPendingApprovalsClick
     )
 }
@@ -238,6 +239,7 @@ private fun DashboardContent(
     modifier: Modifier = Modifier,
     onCommunitySelected: (Community) -> Unit,
     onTransactionClick: (String) -> Unit,
+    onAddTransactionClick: (communityId: String, isAdmin: Boolean) -> Unit,
     onPendingApprovalsClick: () -> Unit
 ) {
     when {
@@ -248,6 +250,7 @@ private fun DashboardContent(
             modifier = modifier,
             onCommunitySelected = onCommunitySelected,
             onTransactionClick = onTransactionClick,
+            onAddTransactionClick = onAddTransactionClick,
             onPendingApprovalsClick = onPendingApprovalsClick
         )
     }
@@ -263,6 +266,7 @@ private fun DashboardMainContent(
     modifier: Modifier = Modifier,
     onCommunitySelected: (Community) -> Unit,
     onTransactionClick: (String) -> Unit,
+    onAddTransactionClick: (communityId: String, isAdmin: Boolean) -> Unit,
     onPendingApprovalsClick: () -> Unit
 ) {
     val community = uiState.selectedCommunity ?: return
@@ -292,6 +296,13 @@ private fun DashboardMainContent(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
+        }
+
+        item {
+            QuickAddTransactionCard(
+                onClick = { },
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
         }
 
         // ---- Section divider & title ----
@@ -559,6 +570,58 @@ private fun SummaryCard(
 // ---------------------------------------------------------------------------
 
 @Composable
+private fun QuickAddTransactionCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Primary.copy(alpha = 0.28f))
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = Primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Tambah Transaksi",
+                    fontWeight = FontWeight.Bold,
+                    color = TextHigh,
+                    fontSize = 14.sp
+                )
+            }
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = TextMedium,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun PendingApprovalsBanner(
     pendingCount: Int,
     onClick: () -> Unit,
@@ -618,25 +681,13 @@ private fun PendingApprovalsBanner(
 
 @Composable
 private fun RecentActivityHeader(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Aktivitas Terkini",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = TextHigh
-        )
-        // "VIEW ALL" removed for MVP — full list is on Transaction tab
-        Text(
-            text = "Lihat di Tab Transaksi →",
-            fontSize = 12.sp,
-            color = Primary,
-            fontWeight = FontWeight.Medium
-        )
-    }
+    Text(
+        text = "Aktivitas Terkini",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.ExtraBold,
+        color = TextHigh,
+        modifier = modifier.fillMaxWidth()
+    )
 }
 
 
@@ -797,7 +848,7 @@ private fun DashboardEmptyState(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyMedium,
             color = TextMedium,
             modifier = Modifier.padding(top = 8.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -850,6 +901,7 @@ private fun DashboardPreviewAdmin() {
             uiState = previewDashboardUiState,
             onCommunitySelected = {},
             onTransactionClick = {},
+            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }
@@ -866,6 +918,7 @@ private fun DashboardPreviewMember() {
             ),
             onCommunitySelected = {},
             onTransactionClick = {},
+            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }
@@ -879,6 +932,7 @@ private fun DashboardPreviewEmpty() {
             uiState = previewEmptyUiState,
             onCommunitySelected = {},
             onTransactionClick = {},
+            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }
@@ -892,6 +946,7 @@ private fun DashboardPreviewLoading() {
             uiState = previewDashboardUiState.copy(isLoading = true),
             onCommunitySelected = {},
             onTransactionClick = {},
+            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }

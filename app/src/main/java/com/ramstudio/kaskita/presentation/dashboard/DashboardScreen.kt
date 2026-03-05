@@ -1,6 +1,7 @@
 package com.ramstudio.kaskita.presentation.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -221,10 +222,6 @@ fun DashboardScreen(
     )
 }
 
-// ---------------------------------------------------------------------------
-// Root Content
-// ---------------------------------------------------------------------------
-
 @Composable
 private fun DashboardContent(
     uiState: DashboardUiState,
@@ -262,8 +259,7 @@ private fun DashboardMainContent(
 
     LazyColumn(
         modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         item {
@@ -421,8 +417,8 @@ private fun CommunitySelector(
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .border(1.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(18.dp)),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -436,12 +432,6 @@ private fun CommunitySelector(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(selectedCommunity.themeColor)
-                )
                 Text(
                     text = selectedCommunity.name,
                     style = MaterialTheme.typography.labelLarge,
@@ -493,23 +483,6 @@ private fun CommunitySelector(
                         }
                     )
                 }
-            }
-        }
-
-        if (isAdmin) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(WarningYellow.copy(alpha = 0.22f))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "ADMIN",
-                    color = AlertOrange,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.6.sp
-                )
             }
         }
     }
@@ -701,7 +674,7 @@ fun TransactionItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = transaction.subtitle,
+                text = transaction.sub,
                 style = MaterialTheme.typography.bodySmall,
                 color = TextMedium,
                 maxLines = 1,

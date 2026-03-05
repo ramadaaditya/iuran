@@ -20,6 +20,12 @@ interface ITransactionRepository {
         proofUrl: String?
     ): kotlin.Result<Transaction>
 
+    suspend fun uploadTransactionProof(
+        localUri: String,
+        userId: String,
+        communityId: String
+    ): kotlin.Result<String>
+
     suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,

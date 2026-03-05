@@ -48,6 +48,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +81,11 @@ fun AddTransactionScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalAppSnackbarHostState.current
+    val receiptPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        viewModel.onReceiptSelected(uri)
+    }
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
@@ -104,7 +111,7 @@ fun AddTransactionScreen(
         onTypeChange = viewModel::onTypeChange,
         onAmountChange = viewModel::onAmountChange,
         onDescriptionChange = viewModel::onDescriptionChange,
-        onAttachReceipt = viewModel::onReceiptAttached,
+        onAttachReceipt = { receiptPickerLauncher.launch("image/*") },
         onCloseClick = onCloseClick,
         onSubmitClick = { viewModel.submitTransaction(communityId, isAdmin) },
         isLoading = uiState.isLoading,

@@ -2,12 +2,12 @@ package com.ramstudio.kaskita.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramstudio.kaskita.domain.repository.AuthRepository
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.domain.model.toUiModel
+import com.ramstudio.kaskita.domain.repository.AuthRepository
 import com.ramstudio.kaskita.domain.repository.ICommunityRepository
 import com.ramstudio.kaskita.domain.repository.ITransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,7 +39,7 @@ class DashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DashboardUiState())
+    private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private var transactionJob: Job? = null
@@ -70,17 +70,18 @@ class DashboardViewModel @Inject constructor(
                         ?.let { prev -> communities.find { it.id == prev.id } }
                         ?: communities.firstOrNull()
                     val isAdmin = selected?.createdBy != null &&
-                        selected.createdBy == currentState.currentUserId
+                            selected.createdBy == currentState.currentUserId
                     currentState.copy(
                         communities = communities,
                         selectedCommunity = selected,
                         isAdmin = isAdmin
                     )
                 }
-                // Kick off transactions for the (possibly new) selected community
                 val selectedId = _uiState.value.selectedCommunity?.id
                 if (selectedId != null) {
                     observeTransactionsForCommunity(selectedId)
+                } else {
+                    _uiState.update { it.copy(isLoading = false) }
                 }
             }
         }
@@ -89,7 +90,6 @@ class DashboardViewModel @Inject constructor(
     private fun observeTransactionsForCommunity(communityId: String) {
         transactionJob?.cancel()
         transactionJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
             trxRepository.getTransactionsByCommunity(communityId).collect { transactions ->
                 val uiModels = transactions.map { it.toUiModel() }
                 _uiState.update { state ->
@@ -115,8 +115,8 @@ class DashboardViewModel @Inject constructor(
             state.copy(
                 selectedCommunity = community,
                 isAdmin = community.createdBy != null && community.createdBy == state.currentUserId,
-                // Clear stale data while new fetch is in progress
                 transactions = emptyList(),
+                isLoading = true,
                 totalIncome = 0.0,
                 totalExpense = 0.0,
                 pendingCount = 0

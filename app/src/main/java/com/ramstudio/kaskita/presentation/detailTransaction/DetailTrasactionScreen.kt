@@ -2,6 +2,7 @@ package com.ramstudio.kaskita.presentation.detailTransaction
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil3.compose.SubcomposeAsyncImage
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.domain.model.TransactionCategory
@@ -159,6 +162,7 @@ fun TransactionDetailsContent(
     isActionLoading: Boolean,
 ) {
     var showRejectDialog by remember { mutableStateOf(false) }
+    var showEvidencePreview by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -211,7 +215,10 @@ fun TransactionDetailsContent(
             Spacer(modifier = Modifier.height(28.dp))
             TransactionDetailsCard(transaction = transaction)
             Spacer(modifier = Modifier.height(20.dp))
-            EvidenceSection()
+            EvidenceSection(
+                proofUrl = transaction.proofUrl,
+                onImageClick = { showEvidencePreview = true }
+            )
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -223,6 +230,13 @@ fun TransactionDetailsContent(
                 showRejectDialog = false
                 onReject()
             }
+        )
+    }
+
+    if (showEvidencePreview && !transaction.proofUrl.isNullOrBlank()) {
+        FullScreenEvidencePreview(
+            imageUrl = transaction.proofUrl,
+            onClose = { showEvidencePreview = false }
         )
     }
 }
@@ -378,7 +392,10 @@ private fun DetailDivider() {
 // ── Evidence section ──────────────────────────────────────────────────────────
 
 @Composable
-private fun EvidenceSection() {
+private fun EvidenceSection(
+    proofUrl: String?,
+    onImageClick: () -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Evidence",
@@ -388,29 +405,118 @@ private fun EvidenceSection() {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Placeholder — replace with AsyncImage (Coil) when evidence URL is available
-        Box(
+        if (proofUrl.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Rounded.Image,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "No evidence uploaded",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            SubcomposeAsyncImage(
+                model = proofUrl,
+                contentDescription = "Transaction evidence",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onImageClick() },
+                contentScale = ContentScale.Fit,
+                loading = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                },
+                error = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Rounded.Image,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Failed to load evidence",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FullScreenEvidencePreview(
+    imageUrl: String,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.92f))
+            .clickable { onClose() },
+        contentAlignment = Alignment.Center
+    ) {
+        SubcomposeAsyncImage(
+            model = imageUrl,
+            contentDescription = "Evidence full preview",
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Rounded.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(40.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                .padding(horizontal = 16.dp),
+            contentScale = ContentScale.Fit,
+            loading = { CircularProgressIndicator(color = White) },
+            error = {
                 Text(
-                    text = "No evidence uploaded",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Failed to load image",
+                    color = White,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
+        )
+
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 40.dp, end = 12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = "Close preview",
+                tint = White
+            )
         }
     }
 }

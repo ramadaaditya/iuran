@@ -18,6 +18,7 @@ data class TransactionEntity(
     val userId: String,
     val amount: Double,
     val description: String?,
+    val proofUrl: String?,
     val createdAt: Long,
     val type: String,
     val status: String,

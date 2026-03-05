@@ -1,5 +1,7 @@
 package com.ramstudio.kaskita.presentation.transaction
 
+import android.content.ContentValues.TAG
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,7 +25,8 @@ data class AddTransactionUiState(
     val amount: String = "",
     val description: String = "",
     val transactionType: TransactionCategory = TransactionCategory.INCOME,
-    val hasReceipt: Boolean = false
+    val hasReceipt: Boolean = false,
+    val receiptUri: String? = null
 )
 
 @HiltViewModel
@@ -47,8 +50,13 @@ class AddTransactionViewModel @Inject constructor(
         _uiState.update { it.copy(transactionType = value) }
     }
 
-    fun onReceiptAttached() {
-        _uiState.update { it.copy(hasReceipt = !it.hasReceipt) }
+    fun onReceiptSelected(uri: Uri?) {
+        _uiState.update {
+            it.copy(
+                hasReceipt = uri != null,
+                receiptUri = uri?.toString()
+            )
+        }
     }
 
     fun clearForm() {
@@ -58,6 +66,7 @@ class AddTransactionViewModel @Inject constructor(
                 description = "",
                 transactionType = TransactionCategory.INCOME,
                 hasReceipt = false,
+                receiptUri = null,
                 isSuccess = false,
                 errorMessage = null
             )
@@ -93,6 +102,11 @@ class AddTransactionViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "Bukti transfer wajib dilampirkan") }
             return
         }
+        if (state.receiptUri.isNullOrBlank()) {
+            Log.d("AddTxVM", "BLOCKED: receipt URI missing")
+            _uiState.update { it.copy(errorMessage = "Bukti transfer tidak valid. Pilih ulang foto.") }
+            return
+        }
         if (!isAdmin && state.transactionType == TransactionCategory.EXPENSE) {
             Log.d("AddTxVM", "BLOCKED: non-admin attempted EXPENSE")
             _uiState.update { it.copy(errorMessage = "Hanya admin yang bisa membuat transaksi pengeluaran") }
@@ -105,12 +119,31 @@ class AddTransactionViewModel @Inject constructor(
 
             try {
                 val currentUser = authRepository.getUser()
+                val uploadResult = transactionRepository.uploadTransactionProof(
+                    localUri = state.receiptUri,
+                    userId = currentUser.id,
+                    communityId = communityId
+                )
+                val uploadedProofUrl = uploadResult.getOrElse { uploadError ->
+                    Log.e(TAG, "GAGAL UPLOAD BUKTI ${uploadError.message}")
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = AppErrorMapper.fromThrowable(
+                                throwable = uploadError,
+                                fallback = "Gagal upload bukti transfer. Coba lagi."
+                            )
+                        )
+                    }
+                    return@launch
+                }
+
                 val result = transactionRepository.submitTransaction(
                     communityId = communityId,
                     type = if (state.transactionType == TransactionCategory.INCOME) "IN" else "OUT",
                     amount = amountDouble.toLong(),
                     description = state.description.trim(),
-                    proofUrl = null,
+                    proofUrl = uploadedProofUrl,
                     userId = currentUser.id
                 )
                 Log.d(

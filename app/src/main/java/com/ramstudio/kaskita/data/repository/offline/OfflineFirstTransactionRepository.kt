@@ -78,6 +78,22 @@ class OfflineFirstTransactionRepository @Inject constructor(
         return result
     }
 
+    override suspend fun uploadTransactionProof(
+        localUri: String,
+        userId: String,
+        communityId: String
+    ): Result<String> {
+        return runCatching {
+            remoteDataSource.uploadTransactionProof(
+                localUri = localUri,
+                userId = userId,
+                communityId = communityId
+            )
+        }.getOrElse { throwable ->
+            Result.failure(throwable)
+        }
+    }
+
     override suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,

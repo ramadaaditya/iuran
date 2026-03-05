@@ -1,5 +1,6 @@
 package com.ramstudio.kaskita.presentation.community
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Add
@@ -166,8 +166,6 @@ private fun CommunityContent(
             items(managedCommunities, key = { it.id ?: it.code }) { community ->
                 CommunityCard(
                     community = community,
-                    role = "Admin",
-                    roleColor = FinanceBlue,
                     onClick = { community.id?.let(onDetailClick) }
                 )
             }
@@ -189,8 +187,6 @@ private fun CommunityContent(
             items(joinedCommunities, key = { it.id ?: it.code }) { community ->
                 CommunityCard(
                     community = community,
-                    role = "Member",
-                    roleColor = FinanceBlueDeep,
                     onClick = { community.id?.let(onDetailClick) }
                 )
             }
@@ -254,8 +250,6 @@ private fun HeroCard(
 @Composable
 private fun CommunityCard(
     community: Community,
-    role: String,
-    roleColor: Color,
     onClick: () -> Unit
 ) {
     Card(
@@ -297,15 +291,7 @@ private fun CommunityCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    RoleBadge(text = role, color = roleColor)
                 }
-                Text(
-                    text = community.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "${community.membersCount} members",
@@ -378,24 +364,6 @@ private fun CreateCommunityCard(onClick: () -> Unit) {
 }
 
 @Composable
-private fun RoleBadge(text: String, color: Color) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(color.copy(alpha = 0.12f))
-            .padding(horizontal = 8.dp, vertical = 2.dp)
-    ) {
-        Text(
-            text = text.uppercase(),
-            color = color,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.4.sp
-        )
-    }
-}
-
-@Composable
 fun AdminBadge(
     containerColor: Color = FinanceBlue.copy(alpha = 0.12f),
     textColor: Color = FinanceBlue
@@ -432,7 +400,8 @@ private fun EmptySectionCard(message: String) {
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = FinanceBlueSurface
-        )
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             text = message,

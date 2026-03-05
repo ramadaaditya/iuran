@@ -8,7 +8,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-
     // BRAND
     primary = Primary,
     onPrimary = White,
@@ -33,6 +32,7 @@ private val LightColorScheme = lightColorScheme(
     outline = Border
 )
 
+// Data class untuk warna semantic di luar standar Material 3
 data class ExtendedColors(
     val success: Color,
     val info: Color,
@@ -40,6 +40,7 @@ data class ExtendedColors(
     val alert: Color
 )
 
+// Inisialisasi CompositionLocal untuk custom colors
 val LocalExtendedColors = staticCompositionLocalOf {
     ExtendedColors(
         success = SuccessGreen,
@@ -48,7 +49,6 @@ val LocalExtendedColors = staticCompositionLocalOf {
         alert = AlertOrange
     )
 }
-
 
 @Composable
 fun KasKitaTheme(
@@ -64,7 +64,8 @@ fun KasKitaTheme(
     ) {
         MaterialTheme(
             colorScheme = LightColorScheme,
-            typography = Typography,
+            // Pastikan Anda memiliki referensi objek Typography yang valid
+            // typography = Typography,
             content = content
         )
     }

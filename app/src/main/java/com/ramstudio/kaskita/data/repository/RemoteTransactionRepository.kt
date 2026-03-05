@@ -1,23 +1,30 @@
 package com.ramstudio.kaskita.data.repository
 
+import android.net.Uri
 import android.util.Log
 import com.ramstudio.kaskita.domain.model.Transaction
 import com.ramstudio.kaskita.domain.model.TransactionDto
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.toDomain
 import com.ramstudio.kaskita.domain.repository.ITransactionRepository
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.storage.upload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.util.UUID
+import kotlin.time.Duration.Companion.days
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class RemoteTransactionRepository @Inject constructor(
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
+    private val supabaseClient: SupabaseClient,
 ) : ITransactionRepository {
     override fun getAllTransactions(): Flow<List<Transaction>> = flow {
         val response = postgrest
@@ -71,7 +78,7 @@ class RemoteTransactionRepository @Inject constructor(
                 put("amount", amount)
                 put("description", description)
                 put("status", "PENDING")
-                put("proof_url", proofUrl ?: "https://placeholder.com/proof.jpg")
+                if (!proofUrl.isNullOrBlank()) put("proof_url", proofUrl)
             }
 
             val result = postgrest
@@ -81,6 +88,36 @@ class RemoteTransactionRepository @Inject constructor(
                 }.decodeSingle<TransactionDto>()
 
             Result.success(result.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadTransactionProof(
+        localUri: String,
+        userId: String,
+        communityId: String
+    ): Result<String> {
+        return try {
+            val uri = Uri.parse(localUri)
+            val extension = uri.lastPathSegment
+                ?.substringAfterLast('.', "jpg")
+                ?.lowercase()
+                ?.takeIf { it.isNotBlank() }
+                ?: "jpg"
+            val fileName = "${System.currentTimeMillis()}_${UUID.randomUUID()}.$extension"
+            val objectPath = "$communityId/$userId/$fileName"
+
+            val bucket = supabaseClient.storage.from(PROOF_BUCKET)
+            bucket.upload(path = objectPath, uri = uri)
+
+            val signedOrPublicUrl = runCatching {
+                bucket.createSignedUrl(path = objectPath, expiresIn = 365.days)
+            }.getOrElse {
+                bucket.publicUrl(objectPath)
+            }
+
+            Result.success(signedOrPublicUrl)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -122,6 +159,10 @@ class RemoteTransactionRepository @Inject constructor(
             Log.e("TransactionRepo", "submitTransaction failed: ${e.message}", e) // ← tambah ini
             Result.failure(e)
         }
+    }
+
+    private companion object {
+        private const val PROOF_BUCKET = "transaction-proofs"
     }
 
 }

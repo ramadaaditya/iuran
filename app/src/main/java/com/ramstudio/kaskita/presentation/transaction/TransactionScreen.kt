@@ -113,9 +113,12 @@ fun TransactionContent(
     onDetailClick: (String) -> Unit
 ) {
     var activeFilter by remember { mutableStateOf(TransactionFilter.ALL) }
-    val pendingCount = remember(transactions) { transactions.count { it.status == TransactionStatus.PENDING } }
-    val incomeCount = remember(transactions) { transactions.count { it.isPositive && it.status == TransactionStatus.SUCCESS } }
-    val expenseCount = remember(transactions) { transactions.count { !it.isPositive && it.status == TransactionStatus.SUCCESS } }
+    val pendingCount =
+        remember(transactions) { transactions.count { it.status == TransactionStatus.PENDING } }
+    val incomeCount =
+        remember(transactions) { transactions.count { it.isPositive && it.status == TransactionStatus.SUCCESS } }
+    val expenseCount =
+        remember(transactions) { transactions.count { !it.isPositive && it.status == TransactionStatus.SUCCESS } }
     val filtered = remember(transactions, activeFilter) {
         when (activeFilter) {
             TransactionFilter.ALL -> transactions
@@ -146,13 +149,13 @@ fun TransactionContent(
             return@LazyColumn
         }
 
-        item {
-            QuickAddTransactionCard(
-                onClick = onAddTransactionClick,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-        }
+//        item {
+//            QuickAddTransactionCard(
+//                onClick = onAddTransactionClick,
+//                modifier = Modifier.padding(horizontal = 20.dp)
+//            )
+//            Spacer(modifier = Modifier.height(14.dp))
+//        }
 
         item {
             SummaryRow(
@@ -249,17 +252,11 @@ private fun TransactionHeader(
     hasSelectedCommunity: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "Transactions",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            text = if (hasSelectedCommunity) "$totalCount records in selected community"
-            else "Select a community on dashboard to load records",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -274,7 +271,11 @@ private fun QuickAddTransactionCard(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary.copy(
+                alpha = 0.08f
+            )
+        ),
         border = CardDefaults.outlinedCardBorder()
     ) {
         Row(
@@ -467,7 +468,11 @@ private fun SelectCommunityState(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.6f
+            )
+        )
     ) {
         Column(
             modifier = Modifier
@@ -607,10 +612,21 @@ private fun TransactionAvatar(transaction: TransactionUiModel) {
     }
 }
 
-@Composable fun TransactionStatusChip(status: TransactionStatus) {
+@Composable
+fun TransactionStatusChip(status: TransactionStatus) {
     val (label, bgColor, textColor) = when (status) {
-        TransactionStatus.PENDING -> Triple("PENDING", WarningYellow.copy(alpha = 0.15f), AlertOrange)
-        TransactionStatus.SUCCESS -> Triple("SUCCESS", SuccessGreen.copy(alpha = 0.15f), SuccessGreen)
+        TransactionStatus.PENDING -> Triple(
+            "PENDING",
+            WarningYellow.copy(alpha = 0.15f),
+            AlertOrange
+        )
+
+        TransactionStatus.SUCCESS -> Triple(
+            "SUCCESS",
+            SuccessGreen.copy(alpha = 0.15f),
+            SuccessGreen
+        )
+
         TransactionStatus.REJECTED -> Triple("REJECTED", ErrorRed.copy(alpha = 0.12f), ErrorRed)
     }
     Box(

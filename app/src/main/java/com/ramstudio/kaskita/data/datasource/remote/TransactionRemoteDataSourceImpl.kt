@@ -41,6 +41,18 @@ class TransactionRemoteDataSourceImpl @Inject constructor(
         )
     }
 
+    override suspend fun uploadTransactionProof(
+        localUri: String,
+        userId: String,
+        communityId: String
+    ): Result<String> {
+        return remoteRepository.uploadTransactionProof(
+            localUri = localUri,
+            userId = userId,
+            communityId = communityId
+        )
+    }
+
     override suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,

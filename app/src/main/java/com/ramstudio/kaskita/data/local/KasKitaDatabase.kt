@@ -14,7 +14,7 @@ import com.ramstudio.kaskita.data.local.entity.TransactionEntity
         MemberEntity::class,
         TransactionEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class KasKitaDatabase : RoomDatabase() {

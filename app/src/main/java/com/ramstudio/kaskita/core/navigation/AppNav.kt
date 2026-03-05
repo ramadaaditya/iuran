@@ -43,14 +43,6 @@ fun AppNavHost(
                         innerPadding = innerPadding,
                         onTransactionClick = { id ->
                             navController.navigate(ScreenRoute.DetailTransaction(id))
-                        },
-                        onAddTransactionClick = { communityId, isAdmin ->
-                            navController.navigate(
-                                ScreenRoute.AddTransactions(
-                                    communityId = communityId,
-                                    isAdmin = isAdmin
-                                )
-                            )
                         }
                     )
 

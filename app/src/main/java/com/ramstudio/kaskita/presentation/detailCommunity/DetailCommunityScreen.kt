@@ -1,6 +1,7 @@
 package com.ramstudio.kaskita.presentation.detailCommunity
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,8 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -84,6 +85,11 @@ import com.ramstudio.kaskita.ui.theme.ErrorRed
 import com.ramstudio.kaskita.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.ui.theme.WarningYellow
 import kotlin.math.abs
+
+private val FinanceBlue = Color(0xFF1D4ED8)
+private val FinanceBlueDeep = Color(0xFF0F2A6B)
+private val FinanceBlueSurface = Color(0xFFEFF6FF)
+private val FinanceBlueBright = Color(0xFF38BDF8)
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
 
@@ -154,6 +160,7 @@ private fun CommunityDetailContent(
     val clipboardManager = LocalClipboardManager.current
     var showCopiedSnackbar by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val resolvedMembersCount = maxOf(community.membersCount, members.size)
 
     LaunchedEffect(showCopiedSnackbar) {
         if (showCopiedSnackbar) {
@@ -188,7 +195,7 @@ private fun CommunityDetailContent(
                             Icon(
                                 Icons.Rounded.Settings,
                                 contentDescription = "Settings",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = FinanceBlueBright
                             )
                         }
                     }
@@ -202,7 +209,7 @@ private fun CommunityDetailContent(
             if (selectedTab == CommunityTab.TRANSACTIONS) {
                 ExtendedFloatingActionButton(
                     onClick = onAddTransactionClick,
-                    containerColor = community.themeColor,
+                    containerColor = FinanceBlue,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -225,6 +232,7 @@ private fun CommunityDetailContent(
             item {
                 CommunityBalanceCard(
                     community = community,
+                    membersCount = resolvedMembersCount,
                     isAdmin = isAdmin,
                     onCopyCodeClick = {
                         clipboardManager.setText(AnnotatedString(community.code))
@@ -252,11 +260,11 @@ private fun CommunityDetailContent(
                     TabRow(
                         selectedTabIndex = selectedTab.ordinal,
                         containerColor = MaterialTheme.colorScheme.background,
-                        contentColor = community.themeColor,
+                        contentColor = FinanceBlue,
                         indicator = { tabPositions ->
                             TabRowDefaults.SecondaryIndicator(
                                 modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab.ordinal]),
-                                color = community.themeColor,
+                                color = FinanceBlue,
                                 height = 2.5.dp
                             )
                         },
@@ -274,7 +282,7 @@ private fun CommunityDetailContent(
                                     Text(
                                         text = tab.title,
                                         fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (selectedTab == tab) community.themeColor
+                                        color = if (selectedTab == tab) FinanceBlue
                                         else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -314,7 +322,7 @@ private fun CommunityDetailContent(
                         items(members) { member ->
                             MemberItem(
                                 member = member,
-                                themeColor = community.themeColor
+                                accentColor = FinanceBlue
                             )
                         }
                     }
@@ -329,6 +337,7 @@ private fun CommunityDetailContent(
 @Composable
 private fun CommunityBalanceCard(
     community: Community,
+    membersCount: Int,
     isAdmin: Boolean,
     onCopyCodeClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -336,12 +345,17 @@ private fun CommunityBalanceCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = community.themeColor),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(FinanceBlueDeep, FinanceBlue)
+                    )
+                )
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -391,7 +405,7 @@ private fun CommunityBalanceCard(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${community.membersCount} members",
+                text = "$membersCount members",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.65f)
             )
@@ -428,7 +442,7 @@ private fun AdminSummaryRow(
             SummaryChip(
                 label = "EXPENSE",
                 value = formatCurrency(abs(totalExpense)),
-                valueColor = MaterialTheme.colorScheme.onBackground,
+                valueColor = FinanceBlueDeep,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -454,15 +468,16 @@ private fun SummaryChip(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = FinanceBlueSurface
         ),
+        border = BorderStroke(1.dp, FinanceBlue.copy(alpha = 0.15f)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = FinanceBlueDeep.copy(alpha = 0.7f),
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp
             )
@@ -484,10 +499,8 @@ private fun PendingApprovalBanner(count: Int, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = WarningYellow.copy(alpha = 0.08f)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = SolidColor(WarningYellow.copy(alpha = 0.4f))
-        )
+        colors = CardDefaults.cardColors(containerColor = FinanceBlueSurface),
+        border = BorderStroke(1.dp, FinanceBlue.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -497,13 +510,13 @@ private fun PendingApprovalBanner(count: Int, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(WarningYellow.copy(alpha = 0.15f)),
+                    .background(FinanceBlue.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Rounded.Schedule,
                     contentDescription = null,
-                    tint = WarningYellow,
+                    tint = FinanceBlue,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -513,18 +526,18 @@ private fun PendingApprovalBanner(count: Int, onClick: () -> Unit) {
                     text = "$count Pending Approval${if (count > 1) "s" else ""}",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = FinanceBlueDeep
                 )
                 Text(
                     text = "Tap to review and approve",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = FinanceBlueDeep.copy(alpha = 0.7f)
                 )
             }
             Icon(
                 Icons.Rounded.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = FinanceBlue,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -556,7 +569,7 @@ private fun TransactionItem(
                 .background(
                     when (tx.status) {
                         TransactionStatus.SUCCESS -> if (isIncome) SuccessGreen.copy(alpha = 0.12f)
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        else FinanceBlueSurface
 
                         TransactionStatus.PENDING -> WarningYellow.copy(alpha = 0.12f)
                         TransactionStatus.REJECTED -> ErrorRed.copy(alpha = 0.1f)
@@ -569,7 +582,7 @@ private fun TransactionItem(
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = when (tx.status) {
-                    TransactionStatus.SUCCESS -> if (isIncome) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    TransactionStatus.SUCCESS -> if (isIncome) SuccessGreen else FinanceBlueDeep
                     TransactionStatus.PENDING -> WarningYellow
                     TransactionStatus.REJECTED -> ErrorRed
                 }
@@ -597,7 +610,7 @@ private fun TransactionItem(
                 text = amountText,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.ExtraBold,
-                color = if (isIncome) SuccessGreen else MaterialTheme.colorScheme.onBackground
+                color = if (isIncome) SuccessGreen else FinanceBlueDeep
             )
             Spacer(modifier = Modifier.height(3.dp))
             StatusBadge(status = tx.status)
@@ -649,7 +662,7 @@ private fun StatusBadge(status: TransactionStatus) {
 @Composable
 private fun MemberItem(
     member: User,
-    themeColor: Color
+    accentColor: Color
 ) {
     val isAdmin = member.role.equals("admin", ignoreCase = true)
     val roleLabel = if (isAdmin) "Admin" else "Member"
@@ -666,8 +679,8 @@ private fun MemberItem(
                 .size(44.dp)
                 .clip(CircleShape)
                 .background(
-                    if (isAdmin) themeColor.copy(alpha = 0.15f)
-                    else MaterialTheme.colorScheme.surfaceVariant
+                    if (isAdmin) accentColor.copy(alpha = 0.15f)
+                    else FinanceBlueSurface
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -675,7 +688,7 @@ private fun MemberItem(
                 text = member.initial,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = if (isAdmin) themeColor else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isAdmin) accentColor else FinanceBlueDeep
             )
         }
 
@@ -691,15 +704,15 @@ private fun MemberItem(
             Text(
                 text = roleLabel,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (isAdmin) themeColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isAdmin) accentColor else FinanceBlueDeep.copy(alpha = 0.7f),
                 fontWeight = if (isAdmin) FontWeight.SemiBold else FontWeight.Normal
             )
         }
 
         if (isAdmin) {
             AdminBadge(
-                containerColor = themeColor.copy(alpha = 0.1f),
-                textColor = themeColor
+                containerColor = accentColor.copy(alpha = 0.1f),
+                textColor = accentColor
             )
         }
     }

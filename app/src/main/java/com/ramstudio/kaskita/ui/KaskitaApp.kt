@@ -24,14 +24,21 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import com.ramstudio.kaskita.AuthState
 import com.ramstudio.kaskita.core.navigation.AppNavHost
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
+import com.ramstudio.kaskita.presentation.onboarding.OnboardingScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KasKitaApp(
     appState: KasKitaState,
-    authState: AuthState
+    authState: AuthState,
+    showOnboarding: Boolean,
+    onOnboardingFinished: () -> Unit
 ) {
     if (authState is AuthState.Loading) return
+    if (showOnboarding) {
+        OnboardingScreen(onFinish = onOnboardingFinished)
+        return
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val currentDestination = appState.currentDestination

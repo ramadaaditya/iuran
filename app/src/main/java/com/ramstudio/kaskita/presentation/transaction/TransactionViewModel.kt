@@ -2,6 +2,7 @@ package com.ramstudio.kaskita.presentation.transaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.domain.model.toUiModel
 import com.ramstudio.kaskita.domain.repository.ITransactionRepository
@@ -44,7 +45,15 @@ class TransactionViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal memuat transaksi. Silakan coba lagi."
+                        )
+                    )
+                }
             }
         }
     }

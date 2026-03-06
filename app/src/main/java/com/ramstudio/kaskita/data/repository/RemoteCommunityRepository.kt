@@ -1,6 +1,7 @@
 package com.ramstudio.kaskita.data.repository
 
 import android.os.Build
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.core.utils.AvatarUtils
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.JoinResponse
@@ -47,11 +48,21 @@ class RemoteCommunityRepository @Inject constructor(
             if (response.success) {
                 Result.Success("Komunitas $name berhasil dibuat! Kode: $uniqueCode")
             } else {
-                Result.Error(response.message)
+                Result.Error(
+                    AppErrorMapper.fromRawMessage(
+                        rawMessage = response.message,
+                        fallback = "Gagal membuat komunitas. Silakan coba lagi."
+                    )
+                )
             }
 
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Gagal membuat komunitas")
+            Result.Error(
+                AppErrorMapper.fromThrowable(
+                    throwable = e,
+                    fallback = "Gagal membuat komunitas. Silakan coba lagi."
+                )
+            )
         }
     }
 
@@ -72,10 +83,20 @@ class RemoteCommunityRepository @Inject constructor(
             if (response.success) {
                 Result.Success(response.message)
             } else {
-                Result.Error(response.message)
+                Result.Error(
+                    AppErrorMapper.fromRawMessage(
+                        rawMessage = response.message,
+                        fallback = "Tidak bisa bergabung ke komunitas ini."
+                    )
+                )
             }
         } catch (e: Exception) {
-            Result.Error("Gagal bergabung: ${e.message}")
+            Result.Error(
+                AppErrorMapper.fromThrowable(
+                    throwable = e,
+                    fallback = "Gagal bergabung ke komunitas. Silakan coba lagi."
+                )
+            )
         }
     }
 
@@ -147,13 +168,23 @@ class RemoteCommunityRepository @Inject constructor(
                     limit(1)
                 }
                 .decodeSingle<CommunityRow>()
+
+            val memberCount = postgrest
+                .from("community_members")
+                .select {
+                    filter { eq("community_id", communityId) }
+                }
+                .decodeList<MemberRow>()
+                .size
+
             Community(
                 id = row.id,
                 name = row.name,
                 description = row.description ?: "",
                 code = row.code,
                 createdBy = row.created_by,
-                balance = row.balance?.toDouble() ?: 0.0
+                balance = row.balance?.toDouble() ?: 0.0,
+                membersCount = memberCount
             )
         } catch (e: Exception) {
             null

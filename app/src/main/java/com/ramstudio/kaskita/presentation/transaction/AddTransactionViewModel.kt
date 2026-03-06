@@ -3,6 +3,7 @@ package com.ramstudio.kaskita.presentation.transaction
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.domain.repository.AuthRepository
 import com.ramstudio.kaskita.domain.repository.ITransactionRepository
@@ -127,7 +128,15 @@ class AddTransactionViewModel @Inject constructor(
                     },
                     onFailure = { e ->
                         Log.e("AddTxVM", "FAILED: ${e.message}", e)
-                        _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = AppErrorMapper.fromThrowable(
+                                    throwable = e,
+                                    fallback = "Gagal mengirim transaksi. Silakan coba lagi."
+                                )
+                            )
+                        }
                     }
                 )
             } catch (e: Exception) {
@@ -135,7 +144,10 @@ class AddTransactionViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Terjadi kesalahan"
+                        errorMessage = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal mengirim transaksi. Silakan coba lagi."
+                        )
                     )
                 }
             }

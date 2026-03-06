@@ -2,6 +2,7 @@ package com.ramstudio.kaskita.presentation.detailCommunity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.Transaction
 import com.ramstudio.kaskita.domain.model.User
@@ -55,7 +56,14 @@ class DetailCommunityViewModel @Inject constructor(
                 val members = communityRepository.getMembersByCommunity(communityId)
                 _uiState.update { it.copy(members = members) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update {
+                    it.copy(
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal memuat data komunitas. Silakan coba lagi."
+                        )
+                    )
+                }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
@@ -68,7 +76,14 @@ class DetailCommunityViewModel @Inject constructor(
                     _uiState.update { it.copy(transactions = txList) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update {
+                    it.copy(
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal memuat transaksi komunitas. Silakan coba lagi."
+                        )
+                    )
+                }
             }
         }
     }

@@ -1,6 +1,12 @@
 package com.ramstudio.kaskita.core.di
 
+import android.content.Context
+import androidx.room.Room
+import com.ramstudio.kaskita.data.local.KasKitaDatabase
+import com.ramstudio.kaskita.data.local.dao.CommunityDao
+import com.ramstudio.kaskita.data.local.dao.TransactionDao
 import com.ramstudio.kaskita.BuildConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,6 +45,28 @@ object DataModule {
     @Singleton
     fun provideAuth(client: SupabaseClient): Auth {
         return client.auth
+    }
+
+    @Provides
+    @Singleton
+    fun provideKasKitaDatabase(
+        @ApplicationContext context: Context
+    ): KasKitaDatabase {
+        return Room.databaseBuilder(
+            context,
+            KasKitaDatabase::class.java,
+            "kaskita.db"
+        ).fallbackToDestructiveMigration().build()
+    }
+
+    @Provides
+    fun provideCommunityDao(database: KasKitaDatabase): CommunityDao {
+        return database.communityDao()
+    }
+
+    @Provides
+    fun provideTransactionDao(database: KasKitaDatabase): TransactionDao {
+        return database.transactionDao()
     }
 
 }

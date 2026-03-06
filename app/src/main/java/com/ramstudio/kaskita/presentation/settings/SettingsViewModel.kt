@@ -4,6 +4,7 @@ import android.content.ContentValues.TAG
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.utils.AppErrorMapper
 import com.ramstudio.kaskita.domain.model.User
 import com.ramstudio.kaskita.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +45,13 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "loadUser: ${e.message}")
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message)
+                    it.copy(
+                        isLoading = false,
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal memuat profil. Silakan coba lagi."
+                        )
+                    )
                 }
             }
         }
@@ -56,7 +63,12 @@ class SettingsViewModel @Inject constructor(
                 authRepository.logout()
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(error = e.message ?: "Failed to logout")
+                    it.copy(
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal keluar akun. Silakan coba lagi."
+                        )
+                    )
                 }
             }
         }
@@ -73,7 +85,10 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isDeletingAccount = false,
-                        error = e.message ?: "Failed to delete account"
+                        error = AppErrorMapper.fromThrowable(
+                            throwable = e,
+                            fallback = "Gagal menghapus akun. Silakan coba lagi."
+                        )
                     )
                 }
             }

@@ -2,6 +2,7 @@ package com.ramstudio.kaskita.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.domain.repository.AuthRepository
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.domain.model.TransactionStatus
@@ -35,6 +36,7 @@ data class DashboardUiState(
 class DashboardViewModel @Inject constructor(
     private val repository: ICommunityRepository,
     private val trxRepository: ITransactionRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -43,7 +45,21 @@ class DashboardViewModel @Inject constructor(
     private var transactionJob: Job? = null
 
     init {
+        loadCurrentUser()
         observeCommunities()
+    }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            val userId = runCatching { authRepository.getUser().id }.getOrNull()
+            _uiState.update { state ->
+                val selected = state.selectedCommunity
+                state.copy(
+                    currentUserId = userId,
+                    isAdmin = selected?.createdBy != null && selected.createdBy == userId
+                )
+            }
+        }
     }
 
     private fun observeCommunities() {
@@ -53,7 +69,8 @@ class DashboardViewModel @Inject constructor(
                     val selected = currentState.selectedCommunity
                         ?.let { prev -> communities.find { it.id == prev.id } }
                         ?: communities.firstOrNull()
-                    val isAdmin = selected?.createdBy == currentState.currentUserId
+                    val isAdmin = selected?.createdBy != null &&
+                        selected.createdBy == currentState.currentUserId
                     currentState.copy(
                         communities = communities,
                         selectedCommunity = selected,
@@ -97,7 +114,7 @@ class DashboardViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 selectedCommunity = community,
-                isAdmin = community.createdBy == state.currentUserId,
+                isAdmin = community.createdBy != null && community.createdBy == state.currentUserId,
                 // Clear stale data while new fetch is in progress
                 transactions = emptyList(),
                 totalIncome = 0.0,

@@ -10,7 +10,7 @@ The app helps members and admins handle contributions and expenses in one place,
 
 | Onboarding | Dashboard |
 |---|---|
-| ![Onboarding Placeholder](https://placehold.co/600x1200/png?text=Onboarding+Screen) | ![Dashboard Placeholder](docs/screenshots/dashboard.png) |
+| ![Onboarding Placeholder](docs/screenshots/onboarding.png) | ![Dashboard Placeholder](docs/screenshots/dashboard.png) |
 
 | Community | Transactions |
 |---|---|

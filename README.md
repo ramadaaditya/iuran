@@ -10,15 +10,15 @@ The app helps members and admins handle contributions and expenses in one place,
 
 | Onboarding | Dashboard |
 |---|---|
-| ![Onboarding Placeholder](https://placehold.co/600x1200/png?text=Onboarding+Screen) | ![Dashboard Placeholder](https://placehold.co/600x1200/png?text=Dashboard+Screen) |
+| ![Onboarding Placeholder](https://placehold.co/600x1200/png?text=Onboarding+Screen) | ![Dashboard Placeholder](docs/screenshots/dashboard.png) |
 
 | Community | Transactions |
 |---|---|
-| ![Community Placeholder](https://placehold.co/600x1200/png?text=Community+Screen) | ![Transactions Placeholder](https://placehold.co/600x1200/png?text=Transaction+Screen) |
+| ![Community Placeholder](docs/screenshots/community.png) | ![Transactions Placeholder](docs/screenshots/transactions.png) |
 
 | Transaction Detail | Settings |
 |---|---|
-| ![Transaction Detail Placeholder](https://placehold.co/600x1200/png?text=Transaction+Detail) | ![Settings Placeholder](https://placehold.co/600x1200/png?text=Settings+Screen) |
+| ![Transaction Detail Placeholder](docs/screenshots/detail_transaction.png) | ![Settings Placeholder](docs/screenshots/settings.png) |
 
 When you are ready, put screenshots in `docs/screenshots/` and update the image links.
 

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.OffsetDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -230,7 +231,11 @@ class RemoteCommunityRepository @Inject constructor(
 
 private fun parseIsoToMillis(iso: String): Long {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        java.time.Instant.parse(iso).toEpochMilli()
+        runCatching { java.time.Instant.parse(iso).toEpochMilli() }
+            .getOrElse {
+                // Backend can return ISO with explicit offset, e.g. +00:00.
+                OffsetDateTime.parse(iso).toInstant().toEpochMilli()
+            }
     } else {
         TODO("VERSION.SDK_INT < O")
     }

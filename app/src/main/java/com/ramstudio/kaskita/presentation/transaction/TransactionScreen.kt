@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +54,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
+import com.ramstudio.kaskita.core.utils.AvatarUtils
 import com.ramstudio.kaskita.data.DummyData
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
@@ -67,11 +71,11 @@ fun NavController.navigateToTransactions(navOptions: NavOptions? = null) =
     if (navOptions != null) navigate(route = ScreenRoute.Transaction, navOptions)
     else navigate(ScreenRoute.Transaction)
 
-private enum class TransactionFilter(val label: String) {
-    ALL("All"),
-    INCOME("Income"),
-    EXPENSE("Expense"),
-    PENDING("Pending")
+private enum class TransactionFilter {
+    ALL,
+    INCOME,
+    EXPENSE,
+    PENDING
 }
 
 @Composable
@@ -134,37 +138,11 @@ fun TransactionContent(
             .padding(innerPadding),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        item {
-            TransactionHeader(
-                totalCount = transactions.size,
-                hasSelectedCommunity = hasSelectedCommunity,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp)
-            )
-        }
-
         if (!hasSelectedCommunity) {
             item {
                 SelectCommunityState(modifier = Modifier.padding(horizontal = 20.dp))
             }
             return@LazyColumn
-        }
-
-//        item {
-//            QuickAddTransactionCard(
-//                onClick = onAddTransactionClick,
-//                modifier = Modifier.padding(horizontal = 20.dp)
-//            )
-//            Spacer(modifier = Modifier.height(14.dp))
-//        }
-
-        item {
-            SummaryRow(
-                incomeCount = incomeCount,
-                expenseCount = expenseCount,
-                pendingCount = pendingCount,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-            Spacer(modifier = Modifier.height(14.dp))
         }
 
         if (isAdmin && pendingCount > 0) {
@@ -196,16 +174,16 @@ fun TransactionContent(
             ) {
                 Text(
                     text = when (activeFilter) {
-                        TransactionFilter.ALL -> "All Transactions"
-                        TransactionFilter.INCOME -> "Income"
-                        TransactionFilter.EXPENSE -> "Expense"
-                        TransactionFilter.PENDING -> "Pending Review"
+                        TransactionFilter.ALL -> stringResource(R.string.transaction_filter_title_all)
+                        TransactionFilter.INCOME -> stringResource(R.string.transaction_filter_title_income)
+                        TransactionFilter.EXPENSE -> stringResource(R.string.transaction_filter_title_expense)
+                        TransactionFilter.PENDING -> stringResource(R.string.transaction_filter_title_pending)
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${filtered.size} items",
+                    text = stringResource(R.string.transaction_items_count, filtered.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -235,7 +213,7 @@ fun TransactionContent(
                 TransactionItem(
                     transaction = transaction,
                     onClick = { onDetailClick(transaction.id) },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 20.dp),
@@ -243,21 +221,6 @@ fun TransactionContent(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun TransactionHeader(
-    totalCount: Int,
-    hasSelectedCommunity: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "Transactions",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold
-        )
     }
 }
 
@@ -300,12 +263,12 @@ private fun QuickAddTransactionCard(
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Add New Transaction",
+                    text = stringResource(R.string.transaction_quick_add_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Record income or expense quickly",
+                    text = stringResource(R.string.transaction_quick_add_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -328,22 +291,27 @@ private fun SummaryRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+
         SummaryChip(
-            label = "Income",
+            label = stringResource(R.string.transaction_filter_income),
             value = "$incomeCount",
             dotColor = SuccessGreen,
             modifier = Modifier.weight(1f)
         )
+
         SummaryChip(
-            label = "Expense",
+            label = stringResource(R.string.transaction_filter_expense),
             value = "$expenseCount",
             dotColor = ErrorRed,
             modifier = Modifier.weight(1f)
         )
+
+
+
         SummaryChip(
-            label = "Pending",
+            label = stringResource(R.string.transaction_filter_pending),
             value = "$pendingCount",
             dotColor = WarningYellow,
             modifier = Modifier.weight(1f)
@@ -379,12 +347,12 @@ private fun PendingApprovalBanner(count: Int, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "$count need approval",
+                    text = stringResource(R.string.transaction_pending_need_approval, count),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Use Pending filter to review faster",
+                    text = stringResource(R.string.transaction_pending_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -436,16 +404,26 @@ private fun FilterChipRow(
     onSelect: (TransactionFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        TransactionFilter.entries.forEach { filter ->
+        items(TransactionFilter.entries) { filter ->
             val isSelected = active == filter
             FilterChip(
                 selected = isSelected,
                 onClick = { onSelect(filter) },
-                label = { Text(filter.label, fontSize = 12.sp) },
+                label = {
+                    Text(
+                        when (filter) {
+                            TransactionFilter.ALL -> stringResource(R.string.transaction_filter_all)
+                            TransactionFilter.INCOME -> stringResource(R.string.transaction_filter_income)
+                            TransactionFilter.EXPENSE -> stringResource(R.string.transaction_filter_expense)
+                            TransactionFilter.PENDING -> stringResource(R.string.transaction_filter_pending)
+                        },
+                        fontSize = 12.sp
+                    )
+                },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = Color.White,
@@ -488,12 +466,12 @@ private fun SelectCommunityState(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "No community selected",
+                text = stringResource(R.string.transaction_select_community_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Open Dashboard and choose a community first.",
+                text = stringResource(R.string.transaction_select_community_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -521,13 +499,20 @@ private fun TransactionEmptyState(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = if (filter == TransactionFilter.PENDING) "No pending approvals" else "No transactions yet",
+            text = if (filter == TransactionFilter.PENDING) {
+                stringResource(R.string.transaction_empty_pending_title)
+            } else {
+                stringResource(R.string.transaction_empty_title)
+            },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = if (filter == TransactionFilter.PENDING) "All approvals are completed."
-            else "Create a transaction to start tracking activity.",
+            text = if (filter == TransactionFilter.PENDING) {
+                stringResource(R.string.transaction_empty_pending_subtitle)
+            } else {
+                stringResource(R.string.transaction_empty_subtitle)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -580,19 +565,26 @@ fun TransactionItem(
 
 @Composable
 private fun TransactionAvatar(transaction: TransactionUiModel) {
+    val displayName =
+        transaction.initiatorName.ifBlank { stringResource(R.string.common_community_member) }
+    val initials = AvatarUtils.getInitials(displayName).ifBlank { "?" }
+    val avatarColor = AvatarUtils.getFallbackAvatarColor(
+        seed = if (transaction.initiatorName.isBlank()) transaction.id else transaction.initiatorName
+    )
+
     Box(contentAlignment = Alignment.BottomEnd) {
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(transaction.iconBgColor.copy(alpha = 0.15f)),
+                .clip(CircleShape)
+                .background(avatarColor),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = transaction.icon,
-                contentDescription = null,
-                tint = transaction.iconBgColor,
-                modifier = Modifier.size(22.dp)
+            Text(
+                text = initials,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = White
             )
         }
         val dotColor = when (transaction.status) {
@@ -616,18 +608,22 @@ private fun TransactionAvatar(transaction: TransactionUiModel) {
 fun TransactionStatusChip(status: TransactionStatus) {
     val (label, bgColor, textColor) = when (status) {
         TransactionStatus.PENDING -> Triple(
-            "PENDING",
+            stringResource(R.string.status_pending),
             WarningYellow.copy(alpha = 0.15f),
             AlertOrange
         )
 
         TransactionStatus.SUCCESS -> Triple(
-            "SUCCESS",
+            stringResource(R.string.status_success),
             SuccessGreen.copy(alpha = 0.15f),
             SuccessGreen
         )
 
-        TransactionStatus.REJECTED -> Triple("REJECTED", ErrorRed.copy(alpha = 0.12f), ErrorRed)
+        TransactionStatus.REJECTED -> Triple(
+            stringResource(R.string.status_rejected),
+            ErrorRed.copy(alpha = 0.12f),
+            ErrorRed
+        )
     }
     Box(
         modifier = Modifier

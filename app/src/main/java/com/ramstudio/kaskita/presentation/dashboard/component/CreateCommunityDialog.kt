@@ -17,7 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ramstudio.kaskita.R
 
 @Composable
 fun CreateCommunityDialog(
@@ -46,9 +48,9 @@ fun CreateCommunityDialog(
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    Text("Creating...")
+                    Text(stringResource(R.string.common_creating))
                 } else {
-                    Text("Create")
+                    Text(stringResource(R.string.common_create))
                 }
             }
         },
@@ -57,11 +59,11 @@ fun CreateCommunityDialog(
                 onClick = onDismiss,
                 enabled = !isLoading
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.common_cancel))
             }
         },
         title = {
-            Text("Create Community")
+            Text(stringResource(R.string.community_create_dialog_title))
         },
         text = {
             Column {
@@ -69,7 +71,7 @@ fun CreateCommunityDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Community Name") },
+                    label = { Text(stringResource(R.string.community_name_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -79,7 +81,7 @@ fun CreateCommunityDialog(
                 OutlinedTextField(
                     value = desc,
                     onValueChange = { desc = it },
-                    label = { Text("Description") },
+                    label = { Text(stringResource(R.string.community_description_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 

@@ -18,12 +18,8 @@ sealed class ScreenRoute {
 
     @Serializable
     object DashboardRoute : ScreenRoute()
-
-
     @Serializable
     object Community : ScreenRoute()
-
-
     @Serializable
     data class DetailCommunity(val communityId: String) : ScreenRoute()
 

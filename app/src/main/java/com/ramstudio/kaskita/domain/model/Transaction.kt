@@ -22,6 +22,7 @@ data class Transaction(
     val userId: String,
     val amount: Double,
     val description: String?,
+    val proofUrl: String? = null,
     val createdAt: Long,
     val type: TransactionCategory,
     val status: TransactionStatus
@@ -48,6 +49,7 @@ data class TransactionUiModel(
     val status: TransactionStatus,
     val category: TransactionCategory,
     val initiatorName: String = "",
+    val proofUrl: String? = null,
 )
 
 
@@ -71,6 +73,7 @@ fun Transaction.toUiModel(): TransactionUiModel {
         timeText = formatTime(createdAt),
         category = type,
         initiatorName = userId,
+        proofUrl = proofUrl,
         status = status,
     )
 }
@@ -83,6 +86,7 @@ fun TransactionDto.toDomain(): Transaction {
             userId = userId,
             amount = amount.toDouble(),
             description = description,
+            proofUrl = proofUrl,
             createdAt = OffsetDateTime.parse(createdAt)
                 .toInstant()
                 .toEpochMilli(),

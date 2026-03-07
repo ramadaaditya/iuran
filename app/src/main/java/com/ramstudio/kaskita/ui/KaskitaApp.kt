@@ -3,9 +3,11 @@ package com.ramstudio.kaskita.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -14,11 +16,18 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.ramstudio.kaskita.AuthState
@@ -42,6 +51,9 @@ fun KasKitaApp(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val currentDestination = appState.currentDestination
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val currentTopLevelDestination = appState.currentTopLevelDestination
+
 
     CompositionLocalProvider(LocalAppSnackbarHostState provides snackbarHostState) {
         val showBottomNav =
@@ -50,6 +62,33 @@ fun KasKitaApp(
             } == true
 
         Scaffold(
+            topBar = {
+                AnimatedVisibility(
+                    visible = showBottomNav,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    CenterAlignedTopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background,
+                            titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        ),
+                        title = {
+                            Text(
+                                currentTopLevelDestination?.titleTextId
+                                    ?.let { stringResource(it) }
+                                    ?: "",
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        },
+                        scrollBehavior = scrollBehavior,
+                    )
+                }
+            },
+
+            containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 AnimatedVisibility(
@@ -57,7 +96,11 @@ fun KasKitaApp(
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                         NavigationBar(
                             containerColor = MaterialTheme.colorScheme.surface
                         ) {

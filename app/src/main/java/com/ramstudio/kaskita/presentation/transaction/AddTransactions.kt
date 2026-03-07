@@ -48,6 +48,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,8 +62,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.ui.theme.ErrorRed
@@ -79,10 +83,16 @@ fun AddTransactionScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalAppSnackbarHostState.current
+    val successMessage = stringResource(R.string.add_transaction_success)
+    val receiptPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        viewModel.onReceiptSelected(uri)
+    }
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            snackbarHostState.showSnackbar("Transaksi berhasil dikirim, menunggu persetujuan admin")
+            snackbarHostState.showSnackbar(successMessage)
             viewModel.clearForm()
             onSuccess()
         }
@@ -104,7 +114,7 @@ fun AddTransactionScreen(
         onTypeChange = viewModel::onTypeChange,
         onAmountChange = viewModel::onAmountChange,
         onDescriptionChange = viewModel::onDescriptionChange,
-        onAttachReceipt = viewModel::onReceiptAttached,
+        onAttachReceipt = { receiptPickerLauncher.launch("image/*") },
         onCloseClick = onCloseClick,
         onSubmitClick = { viewModel.submitTransaction(communityId, isAdmin) },
         isLoading = uiState.isLoading,
@@ -146,7 +156,7 @@ fun AddTransactionContent(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "New Transaction",
+                        text = stringResource(R.string.add_transaction_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -156,7 +166,7 @@ fun AddTransactionContent(
                     IconButton(onClick = onCloseClick) {
                         Icon(
                             Icons.Rounded.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.common_close),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -203,13 +213,13 @@ fun AddTransactionContent(
             Spacer(modifier = Modifier.height(40.dp))
 
             // ── Description ───────────────────────────────────────────────────
-            FormField(label = "DESCRIPTION") {
+            FormField(label = stringResource(R.string.add_transaction_desc_label)) {
                 OutlinedTextField(
                     value = description,
                     onValueChange = onDescriptionChange,
                     placeholder = {
                         Text(
-                            "What is this transaction for?",
+                            stringResource(R.string.add_transaction_desc_placeholder),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
@@ -232,7 +242,7 @@ fun AddTransactionContent(
 
             // ── Receipt upload — REQUIRED for MVP ────────────────────────────
             FormField(
-                label = "PROOF OF TRANSFER",
+                label = stringResource(R.string.add_transaction_proof_label),
                 required = true
             ) {
                 ReceiptUploadField(
@@ -307,7 +317,11 @@ private fun TypeToggle(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = type.name,
+                        text = if (type == TransactionCategory.INCOME) {
+                            stringResource(R.string.transaction_type_income)
+                        } else {
+                            stringResource(R.string.transaction_type_expense)
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = textColor,
@@ -330,7 +344,7 @@ private fun AmountInput(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = "Rp",
+                text = stringResource(R.string.currency_rp),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -377,7 +391,7 @@ private fun AmountInput(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Enter amount",
+            text = stringResource(R.string.add_transaction_amount_hint),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 0.5.sp
@@ -405,7 +419,7 @@ private fun FormField(
             if (required) {
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "• required",
+                    text = stringResource(R.string.add_transaction_required),
                     style = MaterialTheme.typography.labelSmall,
                     color = ErrorRed,
                     fontSize = 10.sp
@@ -465,14 +479,22 @@ private fun ReceiptUploadField(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isAttached) "Receipt attached" else "Upload receipt photo",
+                text = if (isAttached) {
+                    stringResource(R.string.add_transaction_receipt_attached)
+                } else {
+                    stringResource(R.string.add_transaction_upload_receipt)
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = if (isAttached) accentColor
                 else MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = if (isAttached) "Tap to change" else "JPG or PNG, max 5MB",
+                text = if (isAttached) {
+                    stringResource(R.string.add_transaction_tap_to_change)
+                } else {
+                    stringResource(R.string.add_transaction_receipt_format)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -514,10 +536,10 @@ private fun StatusInfoNote(
         Text(
             text = when (transactionType) {
                 TransactionCategory.INCOME ->
-                    "Your deposit will be submitted as PENDING and needs admin approval before the balance is updated."
+                    stringResource(R.string.add_transaction_info_income)
 
                 TransactionCategory.EXPENSE ->
-                    "Withdrawals can only be submitted by admins. This will be recorded as PENDING until approved."
+                    stringResource(R.string.add_transaction_info_expense)
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -569,7 +591,7 @@ private fun SubmitBar(
 
 
                     Text(
-                        text = "Submit Transaction",
+                        text = stringResource(R.string.add_transaction_submit),
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.3.sp
                     )
@@ -585,7 +607,7 @@ private fun SubmitBar(
             if (!isEnabled && !isLoading) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Fill in amount, description, and attach a receipt to continue",
+                    text = stringResource(R.string.add_transaction_submit_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

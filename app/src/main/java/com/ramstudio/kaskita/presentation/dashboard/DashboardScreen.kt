@@ -1,13 +1,14 @@
 package com.ramstudio.kaskita.presentation.dashboard
 
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ChevronRight
@@ -33,7 +33,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,22 +45,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
+import com.ramstudio.kaskita.core.utils.AvatarUtils
+import com.ramstudio.kaskita.core.utils.formatCurrency
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.TransactionCategory
 import com.ramstudio.kaskita.domain.model.TransactionStatus
 import com.ramstudio.kaskita.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.ui.theme.AlertOrange
 import com.ramstudio.kaskita.ui.theme.Border
-import com.ramstudio.kaskita.ui.theme.DividerColor
 import com.ramstudio.kaskita.ui.theme.ErrorRed
 import com.ramstudio.kaskita.ui.theme.InfoBlue
 import com.ramstudio.kaskita.ui.theme.KasKitaTheme
@@ -72,10 +75,6 @@ import com.ramstudio.kaskita.ui.theme.TextHigh
 import com.ramstudio.kaskita.ui.theme.TextMedium
 import com.ramstudio.kaskita.ui.theme.WarningYellow
 import com.ramstudio.kaskita.ui.theme.White
-import java.text.NumberFormat
-import java.util.Locale
-
-
 
 val dummyCommunities = listOf(
     Community(
@@ -213,7 +212,6 @@ val previewEmptyUiState = DashboardUiState(
 fun DashboardScreen(
     innerPadding: PaddingValues,
     onTransactionClick: (String) -> Unit,
-    onAddTransactionClick: (communityId: String, isAdmin: Boolean) -> Unit,
     onPendingApprovalsClick: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -224,14 +222,9 @@ fun DashboardScreen(
         modifier = Modifier.padding(innerPadding),
         onCommunitySelected = viewModel::selectCommunity,
         onTransactionClick = onTransactionClick,
-        onAddTransactionClick = onAddTransactionClick,
         onPendingApprovalsClick = onPendingApprovalsClick
     )
 }
-
-// ---------------------------------------------------------------------------
-// Root Content
-// ---------------------------------------------------------------------------
 
 @Composable
 private fun DashboardContent(
@@ -239,7 +232,6 @@ private fun DashboardContent(
     modifier: Modifier = Modifier,
     onCommunitySelected: (Community) -> Unit,
     onTransactionClick: (String) -> Unit,
-    onAddTransactionClick: (communityId: String, isAdmin: Boolean) -> Unit,
     onPendingApprovalsClick: () -> Unit
 ) {
     when {
@@ -250,7 +242,6 @@ private fun DashboardContent(
             modifier = modifier,
             onCommunitySelected = onCommunitySelected,
             onTransactionClick = onTransactionClick,
-            onAddTransactionClick = onAddTransactionClick,
             onPendingApprovalsClick = onPendingApprovalsClick
         )
     }
@@ -266,15 +257,19 @@ private fun DashboardMainContent(
     modifier: Modifier = Modifier,
     onCommunitySelected: (Community) -> Unit,
     onTransactionClick: (String) -> Unit,
-    onAddTransactionClick: (communityId: String, isAdmin: Boolean) -> Unit,
     onPendingApprovalsClick: () -> Unit
 ) {
     val community = uiState.selectedCommunity ?: return
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         // ---- Header ----
         item {
             DashboardHeader(
@@ -298,14 +293,7 @@ private fun DashboardMainContent(
             }
         }
 
-        item {
-            QuickAddTransactionCard(
-                onClick = { },
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-        }
-
-        // ---- Section divider & title ----
+        // ---- Section title ----
         item {
             RecentActivityHeader(
                 modifier = Modifier.padding(
@@ -334,11 +322,7 @@ private fun DashboardMainContent(
                 TransactionItem(
                     transaction = transaction,
                     onClick = { onTransactionClick(transaction.id) },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    color = DividerColor
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                 )
             }
         }
@@ -362,39 +346,46 @@ private fun DashboardHeader(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Primary)
             .padding(horizontal = 20.dp)
-            .padding(top = 24.dp, bottom = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(top = 12.dp, bottom = 8.dp)
     ) {
-        // Community Selector
-        CommunitySelector(
-            selectedCommunity = community,
-            communities = communities,
-            isAdmin = isAdmin,
-            onCommunitySelected = onCommunitySelected
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_total_balance),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatCurrency(community.balance),
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextHigh,
+                    letterSpacing = (-1).sp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                CommunitySelector(
+                    selectedCommunity = community,
+                    communities = communities,
+                    isAdmin = isAdmin,
+                    onCommunitySelected = onCommunitySelected
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Balance
-        Text(
-            text = "TOTAL KAS",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = White.copy(alpha = 0.6f),
-            letterSpacing = 2.sp
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = formatCurrency(community.balance),
-            fontSize = 40.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = White,
-            letterSpacing = (-1).sp
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Income & Expense Row
         Row(
@@ -402,13 +393,13 @@ private fun DashboardHeader(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SummaryCard(
-                label = "PEMASUKAN",
+                label = stringResource(R.string.dashboard_income),
                 amount = totalIncome,
                 isPositive = true,
                 modifier = Modifier.weight(1f)
             )
             SummaryCard(
-                label = "PENGELUARAN",
+                label = stringResource(R.string.dashboard_expense),
                 amount = totalExpense,
                 isPositive = false,
                 modifier = Modifier.weight(1f)
@@ -428,33 +419,28 @@ private fun CommunitySelector(
     var expanded by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier
+            .clip(RoundedCornerShape(18.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .border(1.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(18.dp)),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box {
-            // Selector pill
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(White.copy(alpha = 0.15f))
+                    .background(MaterialTheme.colorScheme.surface)
                     .clickable { if (communities.size > 1) expanded = true }
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Community color dot
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(selectedCommunity.themeColor)
-                )
                 Text(
                     text = selectedCommunity.name,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = White,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextHigh,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 160.dp)
@@ -462,8 +448,8 @@ private fun CommunitySelector(
                 if (communities.size > 1) {
                     Icon(
                         imageVector = Icons.Default.ExpandMore,
-                        contentDescription = "Ganti komunitas",
-                        tint = White.copy(alpha = 0.7f),
+                        contentDescription = stringResource(R.string.dashboard_change_community_cd),
+                        tint = TextMedium,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -474,7 +460,7 @@ private fun CommunitySelector(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
-                    .background(White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .widthIn(min = 200.dp)
             ) {
                 communities.forEach { community ->
@@ -503,24 +489,6 @@ private fun CommunitySelector(
                 }
             }
         }
-
-        // Admin Badge — only shown when user is admin
-        if (isAdmin) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(WarningYellow)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "ADMIN",
-                    color = TextHigh,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-        }
     }
 }
 
@@ -531,95 +499,50 @@ private fun SummaryCard(
     isPositive: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(White.copy(alpha = 0.12f))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+    val bgColor = if (isPositive) SuccessGreen.copy(alpha = 0.15f) else ErrorRed.copy(alpha = 0.12f)
+    val iconTint = if (isPositive) SuccessGreen else ErrorRed
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
-            Icon(
-                imageVector = if (isPositive) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                contentDescription = null,
-                tint = if (isPositive) SuccessGreen else ErrorRed,
-                modifier = Modifier.size(14.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = if (isPositive) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = label,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextMedium,
+                    letterSpacing = 0.5.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = label,
-                fontSize = 10.sp,
+                text = formatCurrency(amount),
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = White.copy(alpha = 0.65f),
-                letterSpacing = 0.5.sp
+                color = TextHigh
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = formatCurrency(amount),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = White
-        )
     }
 }
 
 // ---------------------------------------------------------------------------
 // Pending Approvals Banner
 // ---------------------------------------------------------------------------
-
-@Composable
-private fun QuickAddTransactionCard(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.08f)),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Primary.copy(alpha = 0.28f))
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Primary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = Primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Tambah Transaksi",
-                    fontWeight = FontWeight.Bold,
-                    color = TextHigh,
-                    fontSize = 14.sp
-                )
-            }
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = TextMedium,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
 
 @Composable
 private fun PendingApprovalsBanner(
@@ -631,9 +554,12 @@ private fun PendingApprovalsBanner(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = WarningYellow.copy(alpha = 0.12f)),
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, WarningYellow.copy(alpha = 0.4f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            WarningYellow.copy(alpha = 0.45f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -658,13 +584,13 @@ private fun PendingApprovalsBanner(
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "$pendingCount Transaksi Menunggu Persetujuan",
+                    text = stringResource(R.string.dashboard_pending_waiting, pendingCount),
                     fontWeight = FontWeight.Bold,
                     color = TextHigh,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Tap untuk review",
+                    text = stringResource(R.string.dashboard_pending_tap_review),
                     fontSize = 12.sp,
                     color = AlertOrange
                 )
@@ -681,13 +607,50 @@ private fun PendingApprovalsBanner(
 
 @Composable
 private fun RecentActivityHeader(modifier: Modifier = Modifier) {
-    Text(
-        text = "Aktivitas Terkini",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.ExtraBold,
-        color = TextHigh,
-        modifier = modifier.fillMaxWidth()
-    )
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.dashboard_history_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = TextHigh
+        )
+        Text(
+            text = stringResource(R.string.common_see_all),
+            style = MaterialTheme.typography.labelMedium,
+            color = Primary,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+
+@Composable
+private fun TransactionCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            content = content
+        )
+    }
 }
 
 
@@ -697,12 +660,9 @@ fun TransactionItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    TransactionCard(
+        modifier = modifier,
+        onClick = onClick
     ) {
         // Avatar
         TransactionAvatar(transaction = transaction)
@@ -732,7 +692,7 @@ fun TransactionItem(
                 text = transaction.amountText,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.isPositive) SuccessGreen else TextHigh
+                color = if (transaction.isPositive) SuccessGreen else ErrorRed
             )
             Spacer(modifier = Modifier.height(4.dp))
             TransactionStatusChip(status = transaction.status)
@@ -742,36 +702,27 @@ fun TransactionItem(
 
 @Composable
 private fun TransactionAvatar(transaction: TransactionUiModel) {
+    val displayName = transaction.initiatorName.ifBlank { stringResource(R.string.common_community_member) }
+    val initials = AvatarUtils.getInitials(displayName).ifBlank { "?" }
+    val avatarColor = AvatarUtils.getFallbackAvatarColor(
+        seed = transaction.initiatorName.ifBlank { transaction.id }
+    )
+
     Box(contentAlignment = Alignment.BottomEnd) {
         Box(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(transaction.iconBgColor.copy(alpha = 0.15f)),
+                .background(avatarColor),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = transaction.icon,
-                contentDescription = null,
-                tint = transaction.iconBgColor,
-                modifier = Modifier.size(22.dp)
+            Text(
+                text = initials,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = White
             )
         }
-        // Status indicator dot
-        val dotColor = when (transaction.status) {
-            TransactionStatus.SUCCESS -> SuccessGreen
-            TransactionStatus.PENDING -> WarningYellow
-            TransactionStatus.REJECTED -> ErrorRed
-        }
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(CircleShape)
-                .background(White)
-                .padding(2.dp)
-                .clip(CircleShape)
-                .background(dotColor)
-        )
     }
 }
 
@@ -779,18 +730,22 @@ private fun TransactionAvatar(transaction: TransactionUiModel) {
 private fun TransactionStatusChip(status: TransactionStatus) {
     val (label, bgColor, textColor) = when (status) {
         TransactionStatus.PENDING -> Triple(
-            "PENDING",
+            stringResource(R.string.status_pending),
             WarningYellow.copy(alpha = 0.15f),
             AlertOrange
         )
 
         TransactionStatus.SUCCESS -> Triple(
-            "SUKSES",
+            stringResource(R.string.status_success),
             SuccessGreen.copy(alpha = 0.15f),
             SuccessGreen
         )
 
-        TransactionStatus.REJECTED -> Triple("DITOLAK", ErrorRed.copy(alpha = 0.12f), ErrorRed)
+        TransactionStatus.REJECTED -> Triple(
+            stringResource(R.string.status_rejected),
+            ErrorRed.copy(alpha = 0.12f),
+            ErrorRed
+        )
     }
 
     Box(
@@ -816,7 +771,9 @@ private fun TransactionStatusChip(status: TransactionStatus) {
 @Composable
 private fun DashboardLoadingState(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(color = Primary)
@@ -826,7 +783,9 @@ private fun DashboardLoadingState(modifier: Modifier = Modifier) {
 @Composable
 private fun DashboardEmptyState(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceVariant),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -838,13 +797,13 @@ private fun DashboardEmptyState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Belum ada komunitas",
+            text = stringResource(R.string.dashboard_empty_community_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = TextHigh
         )
         Text(
-            text = "Buat atau bergabung ke komunitas\ndi tab Komunitas",
+            text = stringResource(R.string.dashboard_empty_community_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = TextMedium,
             modifier = Modifier.padding(top = 8.dp),
@@ -868,30 +827,19 @@ private fun EmptyTransactionState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Belum ada transaksi",
+            text = stringResource(R.string.dashboard_empty_transaction_title),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
             color = TextMedium
         )
         Text(
-            text = "Transaksi komunitas akan muncul di sini",
+            text = stringResource(R.string.dashboard_empty_transaction_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = TextDisabled,
             modifier = Modifier.padding(top = 4.dp)
         )
     }
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-fun formatCurrency(amount: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    formatter.maximumFractionDigits = 0
-    return formatter.format(amount)
-}
-
 
 @Preview(showBackground = true, name = "Dashboard - Normal (Admin)")
 @Composable
@@ -901,7 +849,6 @@ private fun DashboardPreviewAdmin() {
             uiState = previewDashboardUiState,
             onCommunitySelected = {},
             onTransactionClick = {},
-            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }
@@ -918,7 +865,6 @@ private fun DashboardPreviewMember() {
             ),
             onCommunitySelected = {},
             onTransactionClick = {},
-            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }
@@ -932,7 +878,6 @@ private fun DashboardPreviewEmpty() {
             uiState = previewEmptyUiState,
             onCommunitySelected = {},
             onTransactionClick = {},
-            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }
@@ -946,7 +891,6 @@ private fun DashboardPreviewLoading() {
             uiState = previewDashboardUiState.copy(isLoading = true),
             onCommunitySelected = {},
             onTransactionClick = {},
-            onAddTransactionClick = { _, _ -> },
             onPendingApprovalsClick = {}
         )
     }

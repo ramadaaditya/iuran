@@ -18,6 +18,12 @@ interface TransactionRemoteDataSource {
         proofUrl: String?
     ): Result<Transaction>
 
+    suspend fun uploadTransactionProof(
+        localUri: String,
+        userId: String,
+        communityId: String
+    ): Result<String>
+
     suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,

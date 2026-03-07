@@ -20,7 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.OpenInNew
@@ -47,10 +49,12 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.presentation.settings.component.DeleteAccountConfirmationDialog
 import com.ramstudio.kaskita.presentation.settings.component.LogoutConfirmationDialog
@@ -98,7 +102,6 @@ fun SettingsScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundSoft)
             .padding(innerPadding)
     ) {
         Column(
@@ -108,25 +111,21 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            HeaderPanel()
-
             ProfileCard(
                 user = state.user,
                 onEditClick = { }
             )
 
-            SettingsSectionCard(title = "Support") {
+            SettingsSectionCard(title = stringResource(R.string.settings_section_support)) {
                 SettingsItemRow(
-                    title = "Terms of Service",
-                    subtitle = "Read policy and app terms",
-                    icon = Icons.Outlined.Article,
+                    title = stringResource(R.string.settings_terms_title),
+                    subtitle = stringResource(R.string.settings_terms_subtitle),
+                    icon = Icons.AutoMirrored.Outlined.Article,
                     onClick = { },
                     trailing = {
                         Icon(
-                            imageVector = Icons.Outlined.OpenInNew,
-                            contentDescription = "Open Terms",
+                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                            contentDescription = stringResource(R.string.settings_open_terms_cd),
                             tint = TextSubGrey,
                             modifier = Modifier.size(18.dp)
                         )
@@ -135,12 +134,12 @@ fun SettingsScreen(
             }
 
             SettingsSectionCard(
-                title = "Danger Zone",
+                title = stringResource(R.string.settings_section_danger),
                 titleColor = DangerRed
             ) {
                 SettingsItemRow(
-                    title = "Delete Account",
-                    subtitle = "Permanently remove your account data",
+                    title = stringResource(R.string.settings_delete_account_title),
+                    subtitle = stringResource(R.string.settings_delete_account_subtitle),
                     icon = Icons.Outlined.DeleteForever,
                     titleColor = DangerRed,
                     iconTint = DangerRed,
@@ -163,8 +162,8 @@ fun SettingsScreen(
                 HorizontalDivider(color = CardBorder)
 
                 SettingsItemRow(
-                    title = "Log Out",
-                    subtitle = "Sign out from this device",
+                    title = stringResource(R.string.settings_logout_title),
+                    subtitle = stringResource(R.string.settings_logout_subtitle),
                     icon = Icons.AutoMirrored.Outlined.Logout,
                     titleColor = DangerRed,
                     iconTint = DangerRed,
@@ -203,39 +202,6 @@ fun SettingsScreen(
     }
 }
 
-@Composable
-private fun HeaderPanel() {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.Transparent,
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color(0xFFEAF1FF), Color(0xFFF7FAFF))
-                    )
-                )
-                .padding(horizontal = 18.dp, vertical = 16.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Settings",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextMainBlack
-                )
-                Text(
-                    text = "Manage your profile and account security",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSubGrey
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun SettingsSectionCard(

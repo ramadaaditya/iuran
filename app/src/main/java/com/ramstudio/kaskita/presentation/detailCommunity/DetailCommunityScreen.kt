@@ -1,7 +1,7 @@
 package com.ramstudio.kaskita.presentation.detailCommunity
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,6 +60,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.formatCurrency
 import com.ramstudio.kaskita.core.utils.formatRupiahTransaction
@@ -133,7 +135,7 @@ fun CommunityDetailScreen(
         uiState.error != null -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = uiState.error ?: "Something went wrong",
+                    text = uiState.error ?: stringResource(R.string.detail_community_error_default),
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(24.dp)
@@ -162,12 +164,12 @@ private fun CommunityDetailContent(
     val snackbarHostState = remember { SnackbarHostState() }
     val resolvedMembersCount = maxOf(community.membersCount, members.size)
 
-    LaunchedEffect(showCopiedSnackbar) {
-        if (showCopiedSnackbar) {
-            snackbarHostState.showSnackbar("Invite code copied!")
-            showCopiedSnackbar = false
-        }
-    }
+//    LaunchedEffect(showCopiedSnackbar) {
+//        if (showCopiedSnackbar) {
+//            snackbarHostState.showSnackbar(stringResource(R.string.detail_community_invite_copied))
+//            showCopiedSnackbar = false
+//        }
+//    }
 
     Scaffold(
         topBar = {
@@ -184,7 +186,7 @@ private fun CommunityDetailContent(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -194,7 +196,7 @@ private fun CommunityDetailContent(
                         IconButton(onClick = { /* TODO: Community settings */ }) {
                             Icon(
                                 Icons.Rounded.Settings,
-                                contentDescription = "Settings",
+                                contentDescription = stringResource(R.string.common_settings),
                                 tint = FinanceBlueBright
                             )
                         }
@@ -215,7 +217,10 @@ private fun CommunityDetailContent(
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add Transaction", fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.detail_community_add_transaction),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         },
@@ -298,8 +303,8 @@ private fun CommunityDetailContent(
                         item {
                             CommunityEmptyState(
                                 icon = Icons.AutoMirrored.Rounded.ReceiptLong,
-                                title = "No transactions yet",
-                                subtitle = "Tap 'Add Transaction' to record the first one."
+                                title = stringResource(R.string.detail_community_empty_tx_title),
+                                subtitle = stringResource(R.string.detail_community_empty_tx_subtitle)
                             )
                         }
                     } else {
@@ -314,8 +319,8 @@ private fun CommunityDetailContent(
                         item {
                             CommunityEmptyState(
                                 icon = Icons.AutoMirrored.Rounded.ReceiptLong,
-                                title = "No members found",
-                                subtitle = "Share the invite code to add members."
+                                title = stringResource(R.string.detail_community_empty_member_title),
+                                subtitle = stringResource(R.string.detail_community_empty_member_subtitle)
                             )
                         }
                     } else {
@@ -362,7 +367,7 @@ private fun CommunityBalanceCard(
         ) {
 
             Text(
-                text = "TOTAL BALANCE",
+                text = stringResource(R.string.detail_community_total_balance),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.75f),
                 letterSpacing = 1.sp,
@@ -395,7 +400,7 @@ private fun CommunityBalanceCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Invite code: ${community.code}",
+                    text = stringResource(R.string.detail_community_invite_code, community.code),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
@@ -405,7 +410,7 @@ private fun CommunityBalanceCard(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "$membersCount members",
+                text = stringResource(R.string.common_members_count, membersCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.65f)
             )
@@ -434,13 +439,13 @@ private fun AdminSummaryRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SummaryChip(
-                label = "INCOME",
+                label = stringResource(R.string.detail_community_income),
                 value = "+${formatCurrency(totalIncome)}",
                 valueColor = SuccessGreen,
                 modifier = Modifier.weight(1f)
             )
             SummaryChip(
-                label = "EXPENSE",
+                label = stringResource(R.string.detail_community_expense),
                 value = formatCurrency(abs(totalExpense)),
                 valueColor = FinanceBlueDeep,
                 modifier = Modifier.weight(1f)
@@ -523,13 +528,13 @@ private fun PendingApprovalBanner(count: Int, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "$count Pending Approval${if (count > 1) "s" else ""}",
+                    text = stringResource(R.string.detail_community_pending_count, count),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = FinanceBlueDeep
                 )
                 Text(
-                    text = "Tap to review and approve",
+                    text = stringResource(R.string.detail_community_pending_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = FinanceBlueDeep.copy(alpha = 0.7f)
                 )
@@ -593,7 +598,11 @@ private fun TransactionItem(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = tx.description ?: if (isIncome) "Pemasukan" else "Pengeluaran",
+                text = tx.description ?: if (isIncome) {
+                    stringResource(R.string.detail_community_default_income)
+                } else {
+                    stringResource(R.string.detail_community_default_expense)
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -629,16 +638,20 @@ private fun StatusBadge(status: TransactionStatus) {
         TransactionStatus.SUCCESS -> Triple(
             SuccessGreen.copy(alpha = 0.12f),
             SuccessGreen,
-            "SUCCESS"
+            stringResource(R.string.status_success)
         )
 
         TransactionStatus.PENDING -> Triple(
             WarningYellow.copy(alpha = 0.12f),
             WarningYellow,
-            "PENDING"
+            stringResource(R.string.status_pending)
         )
 
-        TransactionStatus.REJECTED -> Triple(ErrorRed.copy(alpha = 0.1f), ErrorRed, "REJECTED")
+        TransactionStatus.REJECTED -> Triple(
+            ErrorRed.copy(alpha = 0.1f),
+            ErrorRed,
+            stringResource(R.string.status_rejected)
+        )
     }
 
     Box(
@@ -665,7 +678,11 @@ private fun MemberItem(
     accentColor: Color
 ) {
     val isAdmin = member.role.equals("admin", ignoreCase = true)
-    val roleLabel = if (isAdmin) "Admin" else "Member"
+    val roleLabel = if (isAdmin) {
+        stringResource(R.string.detail_community_role_admin)
+    } else {
+        stringResource(R.string.detail_community_role_member)
+    }
 
     Row(
         modifier = Modifier

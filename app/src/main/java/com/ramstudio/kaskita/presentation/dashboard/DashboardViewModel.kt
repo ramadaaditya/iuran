@@ -90,8 +90,28 @@ class DashboardViewModel @Inject constructor(
     private fun observeTransactionsForCommunity(communityId: String) {
         transactionJob?.cancel()
         transactionJob = viewModelScope.launch {
+            val currentUser = runCatching { authRepository.getUser() }.getOrNull()
+            val memberNameById = runCatching {
+                repository.getMembersByCommunity(communityId)
+            }.getOrDefault(emptyList()).associateBy({ it.id }, { it.name })
+
             trxRepository.getTransactionsByCommunity(communityId).collect { transactions ->
-                val uiModels = transactions.map { it.toUiModel() }
+                val uiModels = transactions.map { transaction ->
+                    val initiatorName = when {
+                        memberNameById[transaction.userId].isNullOrBlank().not() ->
+                            memberNameById[transaction.userId].orEmpty()
+
+                        currentUser != null && transaction.userId == currentUser.id ->
+                            currentUser.name
+
+                        else -> "Community Member"
+                    }
+
+                    transaction.toUiModel().copy(
+                        initiatorName = initiatorName,
+                        subtitle = initiatorName
+                    )
+                }
                 _uiState.update { state ->
                     state.copy(
                         transactions = uiModels,

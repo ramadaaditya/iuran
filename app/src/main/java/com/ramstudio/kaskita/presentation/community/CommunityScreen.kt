@@ -52,10 +52,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.presentation.dashboard.component.CreateCommunityDialog
@@ -155,12 +157,12 @@ private fun CommunityContent(
         }
 
         item {
-            SectionTitle("Managed by You")
+            SectionTitle(stringResource(R.string.community_section_managed))
         }
 
         if (managedCommunities.isEmpty()) {
             item {
-                EmptySectionCard("You have not created a community yet.")
+                EmptySectionCard(stringResource(R.string.community_empty_managed))
             }
         } else {
             items(managedCommunities, key = { it.id ?: it.code }) { community ->
@@ -176,12 +178,12 @@ private fun CommunityContent(
         }
 
         item {
-            SectionTitle("Joined Communities")
+            SectionTitle(stringResource(R.string.community_section_joined))
         }
 
         if (joinedCommunities.isEmpty()) {
             item {
-                EmptySectionCard("Join a community using invite code.")
+                EmptySectionCard(stringResource(R.string.community_empty_joined))
             }
         } else {
             items(joinedCommunities, key = { it.id ?: it.code }) { community ->
@@ -216,13 +218,13 @@ private fun HeroCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Communities",
+                    text = stringResource(R.string.community_hero_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
                 )
                 Text(
-                    text = "$totalCommunities active group${if (totalCommunities == 1) "" else "s"}",
+                    text = stringResource(R.string.community_active_groups, totalCommunities),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f)
                 )
@@ -241,7 +243,7 @@ private fun HeroCard(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Join", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.common_join), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -294,7 +296,7 @@ private fun CommunityCard(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "${community.membersCount} members",
+                    text = stringResource(R.string.common_members_count, community.membersCount),
                     style = MaterialTheme.typography.labelMedium,
                     color = FinanceBlueDeep.copy(alpha = 0.7f)
                 )
@@ -344,12 +346,12 @@ private fun CreateCommunityCard(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Create Community",
+                    text = stringResource(R.string.community_create_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Start a group and invite members",
+                    text = stringResource(R.string.community_create_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -375,7 +377,7 @@ fun AdminBadge(
             .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.community_admin_badge),
             color = textColor,
             fontSize = 10.sp,
             fontWeight = FontWeight.ExtraBold,

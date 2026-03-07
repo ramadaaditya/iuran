@@ -20,8 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -72,20 +71,14 @@ fun SignUpScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = BgColor // Set background Scaffold
-    ) { paddingValues ->
-        SignUpContent(
-            modifier = Modifier.padding(paddingValues),
-            uiState = uiState,
-            onFullNameChange = { viewModel.onFullNameChange(it) },
-            onEmailChange = { viewModel.onEmailChange(it) },
-            onPasswordChange = { viewModel.onPasswordChange(it) },
-            onSignUpClick = { viewModel.signUpWithEmail() },
-            navigateSignIn = onNavigateSignIn
-        )
-    }
+    SignUpContent(
+        uiState = uiState,
+        onFullNameChange = { viewModel.onFullNameChange(it) },
+        onEmailChange = { viewModel.onEmailChange(it) },
+        onPasswordChange = { viewModel.onPasswordChange(it) },
+        onSignUpClick = { viewModel.signUpWithEmail() },
+        navigateSignIn = onNavigateSignIn
+    )
 }
 
 @Composable
@@ -118,7 +111,7 @@ fun SignUpContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Full Name",
+                    text = stringResource(R.string.signup_fullname_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -130,7 +123,7 @@ fun SignUpContent(
                     onValueChange = onFullNameChange,
                     placeholder = {
                         Text(
-                            text = "Ramada Aditya",
+                            text = stringResource(R.string.signup_fullname_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -150,7 +143,7 @@ fun SignUpContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Email",
+                    text = stringResource(R.string.signin_email_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -163,7 +156,7 @@ fun SignUpContent(
                     onValueChange = onEmailChange,
                     placeholder = {
                         Text(
-                            text = "john.doe@example.com",
+                            text = stringResource(R.string.signin_email_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -185,7 +178,7 @@ fun SignUpContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Password",
+                    text = stringResource(R.string.signup_password_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -198,7 +191,7 @@ fun SignUpContent(
                     onValueChange = onPasswordChange,
                     placeholder = {
                         Text(
-                            text = "Enter your password",
+                            text = stringResource(R.string.signin_password_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -222,8 +215,8 @@ fun SignUpContent(
             Button(
                 onClick = onSignUpClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryGreen,
-                    disabledContainerColor = PrimaryGreen.copy(alpha = 0.5f)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 ),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -239,7 +232,7 @@ fun SignUpContent(
                     )
                 } else {
                     Text(
-                        text = "Sign up",
+                        text = stringResource(R.string.signup_button),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
@@ -248,13 +241,6 @@ fun SignUpContent(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Tambahan: Tombol Google Sign In yang sudah disesuaikan
-            // Uncomment dan gunakan jika diperlukan
-            /*
-            GoogleSignInButton(onClick = { /* TODO: Handle Google Sign In */ })
-            Spacer(modifier = Modifier.height(16.dp))
-            */
 
             TextButton(onClick = navigateSignIn) {
                 Text(
@@ -265,16 +251,16 @@ fun SignUpContent(
                                 color = TextGrey
                             )
                         ) {
-                            append("Already have an account? ")
+                            append(stringResource(R.string.signup_have_account_prefix))
                         }
 
                         withStyle(
                             style = SpanStyle(
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryGreen
+                                color = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            append("Log in")
+                            append(stringResource(R.string.signup_have_account_action))
                         }
                     }
                 )
@@ -286,7 +272,7 @@ fun SignUpContent(
 @Composable
 fun RegisterHeader() {
     Text(
-        text = "Create Account",
+        text = stringResource(R.string.signup_header_title),
         style = MaterialTheme.typography.headlineLarge,
         color = TextDark,
         fontWeight = FontWeight.ExtraBold,
@@ -294,7 +280,7 @@ fun RegisterHeader() {
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Join your community and start tracking you cash flow with ease",
+        text = stringResource(R.string.signup_header_subtitle),
         style = MaterialTheme.typography.bodyMedium,
         color = TextGrey,
         maxLines = 2,
@@ -318,19 +304,18 @@ fun GoogleSignInButton(onClick: () -> Unit) {
         // Pastikan Anda memiliki icon Google (ic_google) di res/drawable
         Image(
             painter = painterResource(R.drawable.ic_google),
-            contentDescription = "Google Sign In",
+            contentDescription = stringResource(R.string.signup_google_cd),
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
 
         Text(
-            text = "Sign in with Google",
+            text = stringResource(R.string.signup_google_button),
             fontWeight = FontWeight.Medium
         )
     }
 }
 
-// Gradient baru untuk tema terang
 @Composable
 fun LightGradient() {
     Box(
@@ -341,7 +326,7 @@ fun LightGradient() {
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         LightGreenBg.copy(alpha = 0.6f),
-                        BgColor // Membaur dengan background utama
+                        BgColor
                     )
                 )
             )

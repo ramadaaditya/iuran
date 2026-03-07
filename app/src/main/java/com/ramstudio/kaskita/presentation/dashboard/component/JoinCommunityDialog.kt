@@ -23,8 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.presentation.auth.register.PrimaryGreen
 import com.ramstudio.kaskita.presentation.auth.register.TextDark
 import com.ramstudio.kaskita.presentation.auth.register.TextGrey
@@ -46,7 +48,7 @@ fun JoinCommunityDialog(
         },
         title = {
             Text(
-                text = "Join Community",
+                text = stringResource(R.string.join_dialog_title),
                 fontWeight = FontWeight.Bold,
                 color = TextDark
             )
@@ -54,7 +56,7 @@ fun JoinCommunityDialog(
         text = {
             Column {
                 Text(
-                    text = "Enter the invite code or community ID to join an existing group.",
+                    text = stringResource(R.string.join_dialog_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextGrey
                 )
@@ -63,7 +65,7 @@ fun JoinCommunityDialog(
                 OutlinedTextField(
                     value = inviteCode,
                     onValueChange = { inviteCode = it },
-                    label = { Text("Invite Code") },
+                    label = { Text(stringResource(R.string.join_dialog_invite_label)) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
@@ -104,7 +106,7 @@ fun JoinCommunityDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Join", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_join), fontWeight = FontWeight.Bold)
                 }
             }
         },
@@ -113,7 +115,7 @@ fun JoinCommunityDialog(
                 onClick = onDismiss,
                 enabled = !isLoading
             ) {
-                Text("Cancel", color = TextGrey, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.common_cancel), color = TextGrey, fontWeight = FontWeight.Bold)
             }
         },
         containerColor = White,

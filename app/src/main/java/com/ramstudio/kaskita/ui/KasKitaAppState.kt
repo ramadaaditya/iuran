@@ -55,7 +55,6 @@ class KasKitaState(
         }
     val topLevelDestinations: List<TopLevelDestination> = TopLevelDestination.entries
 
-
     fun navigateToTopLevelDestination(topLevelDestination: TopLevelDestination) {
         trace("Navigation : ${topLevelDestination.name}") {
             val topLevelNavOptions = navOptions {
@@ -90,8 +89,6 @@ class KasKitaState(
 
     fun navigateToAddTransactions(communityId: String, isAdmin: Boolean = false) =
         navController.navigate(ScreenRoute.AddTransactions(communityId, isAdmin))
-
-
 }
 
 fun NavDestination?.isRouteInHierarchy(route: KClass<*>): Boolean {

@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,6 +64,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.SubcomposeAsyncImage
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.domain.model.TransactionCategory
@@ -126,7 +128,7 @@ fun TransactionDetailsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "Transaction not found",
+                        stringResource(R.string.detail_transaction_not_found),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -169,7 +171,7 @@ fun TransactionDetailsContent(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Transaction Detail",
+                        text = stringResource(R.string.detail_transaction_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -179,7 +181,7 @@ fun TransactionDetailsContent(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -262,20 +264,6 @@ private fun AmountHeroSection(transaction: TransactionUiModel) {
                     modifier = Modifier.size(36.dp)
                 )
             }
-            val dotColor = when (transaction.status) {
-                TransactionStatus.SUCCESS -> SuccessGreen
-                TransactionStatus.PENDING -> WarningYellow
-                TransactionStatus.REJECTED -> ErrorRed
-            }
-            Box(
-                modifier = Modifier
-                    .size(18.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(White)
-                    .padding(3.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(dotColor)
-            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -290,12 +278,10 @@ private fun AmountHeroSection(transaction: TransactionUiModel) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        TransactionStatusChip(status = transaction.status)
-
         if (transaction.status == TransactionStatus.PENDING) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Waiting for admin approval",
+                text = stringResource(R.string.detail_transaction_waiting_approval),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -317,26 +303,29 @@ private fun TransactionDetailsCard(transaction: TransactionUiModel) {
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             DetailRow(
-                label = "Description",
+                label = stringResource(R.string.detail_transaction_label_description),
                 value = transaction.title
             )
             DetailDivider()
             DetailRow(
-                label = "Type",
-                value = if (transaction.isPositive) "Income (Deposit)" else "Expense (Withdrawal)"
+                label = stringResource(R.string.detail_transaction_label_type),
+                value = if (transaction.isPositive) {
+                    stringResource(R.string.detail_transaction_type_income)
+                } else {
+                    stringResource(R.string.detail_transaction_type_expense)
+                }
             )
             DetailDivider()
             DetailRow(
-                label = "Date",
+                label = stringResource(R.string.detail_transaction_label_date),
                 value = transaction.timeText
             )
             DetailDivider()
             DetailRow(
-                label = "Submitted by",
-                value = transaction.initiatorName.ifBlank { "Community Member" }
+                label = stringResource(R.string.detail_transaction_label_submitted_by),
+                value = transaction.initiatorName.ifBlank { stringResource(R.string.common_community_member) }
             )
             DetailDivider()
-            // Status row with chip instead of plain text
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -345,7 +334,7 @@ private fun TransactionDetailsCard(transaction: TransactionUiModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Status",
+                    text = stringResource(R.string.detail_transaction_label_status),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
@@ -398,7 +387,7 @@ private fun EvidenceSection(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Evidence",
+            text = stringResource(R.string.detail_transaction_evidence),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -423,7 +412,7 @@ private fun EvidenceSection(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "No evidence uploaded",
+                        text = stringResource(R.string.detail_transaction_no_evidence),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -432,7 +421,7 @@ private fun EvidenceSection(
         } else {
             SubcomposeAsyncImage(
                 model = proofUrl,
-                contentDescription = "Transaction evidence",
+                contentDescription = stringResource(R.string.detail_transaction_evidence_cd),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
@@ -465,7 +454,7 @@ private fun EvidenceSection(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Failed to load evidence",
+                                text = stringResource(R.string.detail_transaction_failed_load_evidence),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -491,7 +480,7 @@ private fun FullScreenEvidencePreview(
     ) {
         SubcomposeAsyncImage(
             model = imageUrl,
-            contentDescription = "Evidence full preview",
+            contentDescription = stringResource(R.string.detail_transaction_full_preview_cd),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
@@ -499,7 +488,7 @@ private fun FullScreenEvidencePreview(
             loading = { CircularProgressIndicator(color = White) },
             error = {
                 Text(
-                    text = "Failed to load image",
+                    text = stringResource(R.string.detail_transaction_failed_load_image),
                     color = White,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -514,7 +503,7 @@ private fun FullScreenEvidencePreview(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Close,
-                contentDescription = "Close preview",
+                contentDescription = stringResource(R.string.detail_transaction_close_preview_cd),
                 tint = White
             )
         }
@@ -561,7 +550,7 @@ private fun AdminActionBar(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Reject", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.detail_transaction_reject), fontWeight = FontWeight.Bold)
             }
 
             // Approve
@@ -590,7 +579,7 @@ private fun AdminActionBar(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Approve", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.detail_transaction_approve), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -620,7 +609,7 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
         },
         title = {
             Text(
-                "Reject Transaction?",
+                stringResource(R.string.detail_transaction_reject_dialog_title),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -628,7 +617,7 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
         },
         text = {
             Text(
-                "This action cannot be undone. The transaction will be marked as rejected.",
+                stringResource(R.string.detail_transaction_reject_dialog_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -641,12 +630,12 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = ErrorRed),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Yes, Reject", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.detail_transaction_reject_confirm), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.common_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         containerColor = MaterialTheme.colorScheme.background,

@@ -1,5 +1,7 @@
 package com.ramstudio.kaskita.presentation.onboarding
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,36 +29,37 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.ui.theme.Primary
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
     val title: String,
     val quote: String,
-    val imageUrl: String
+    @DrawableRes val imageRes: Int
 )
 
 private val pages = listOf(
     OnboardingPage(
-        title = "Track Every Rupiah",
-        quote = "Small daily records build strong and transparent community cash.",
-        imageUrl = "https://placehold.co/1200x800/F2F1F9/281C9D?text=Track+Transactions"
+        title = "",
+        quote = "",
+        imageRes = R.drawable.business1
     ),
     OnboardingPage(
-        title = "Manage Together",
-        quote = "When everyone can see the same numbers, trust grows naturally.",
-        imageUrl = "https://placehold.co/1200x800/EDEBFF/281C9D?text=Community+Finance"
+        title = "",
+        quote = "",
+        imageRes = R.drawable.business2
     ),
     OnboardingPage(
-        title = "Report With Confidence",
-        quote = "Clear summaries make every financial decision calmer and smarter.",
-        imageUrl = "https://placehold.co/1200x800/E7E3FF/281C9D?text=Clear+Reports"
+        title = "",
+        quote = "",
+        imageRes = R.drawable.business3
     )
 )
 
@@ -78,7 +82,10 @@ fun OnboardingScreen(
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(onClick = onFinish) {
-                Text(text = "Skip", color = MaterialTheme.colorScheme.primary)
+                Text(
+                    text = stringResource(R.string.common_skip),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
 
@@ -87,6 +94,16 @@ fun OnboardingScreen(
             modifier = Modifier.weight(1f)
         ) { page ->
             val item = pages[page]
+            val title = when (page) {
+                0 -> stringResource(R.string.onboarding_title_1)
+                1 -> stringResource(R.string.onboarding_title_2)
+                else -> stringResource(R.string.onboarding_title_3)
+            }
+            val quote = when (page) {
+                0 -> stringResource(R.string.onboarding_quote_1)
+                1 -> stringResource(R.string.onboarding_quote_2)
+                else -> stringResource(R.string.onboarding_quote_3)
+            }
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -96,30 +113,20 @@ fun OnboardingScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(360.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    MaterialTheme.colorScheme.primaryContainer
-                                )
-                            )
-                        ),
+                        .clip(RoundedCornerShape(28.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = item.imageUrl,
-                        contentDescription = item.title,
+                    Image(
+                        painter = painterResource(id = item.imageRes),
+                        contentDescription = title,
                         modifier = Modifier.fillMaxSize()
                     )
-
-                    IconPlaceHolderOverlay()
                 }
 
                 Spacer(modifier = Modifier.height(36.dp))
 
                 Text(
-                    text = item.title,
+                    text = title,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
@@ -129,7 +136,7 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "\"${item.quote}\"",
+                    text = "\"$quote\"",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontStyle = FontStyle.Italic,
@@ -167,25 +174,13 @@ fun OnboardingScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (pagerState.currentPage == pages.lastIndex) "Get Started" else "Next")
+            Text(
+                if (pagerState.currentPage == pages.lastIndex) {
+                    stringResource(R.string.common_get_started)
+                } else {
+                    stringResource(R.string.common_next)
+                }
+            )
         }
-    }
-}
-
-@Composable
-private fun IconPlaceHolderOverlay() {
-    Box(
-        modifier = Modifier
-            .size(72.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f)),
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.material3.Icon(
-            imageVector = Icons.Default.Image,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(36.dp)
-        )
     }
 }

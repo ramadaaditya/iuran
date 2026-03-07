@@ -7,8 +7,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.presentation.settings.DangerRed
 import com.ramstudio.kaskita.presentation.settings.TextMainBlack
 
@@ -20,11 +22,10 @@ fun DeleteAccountConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Delete account") },
+        title = { Text(text = stringResource(R.string.dialog_delete_account_title)) },
         text = {
             Text(
-                text = "This action is permanent and cannot be undone. " +
-                    "Your account data will be removed from the app."
+                text = stringResource(R.string.dialog_delete_account_body)
             )
         },
         confirmButton = {
@@ -36,13 +37,17 @@ fun DeleteAccountConfirmationDialog(
                         color = DangerRed
                     )
                 } else {
-                    Text("Delete", color = DangerRed, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.dialog_delete_account_confirm),
+                        color = DangerRed,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isLoading) {
-                Text("Cancel", color = TextMainBlack)
+                Text(stringResource(R.string.common_cancel), color = TextMainBlack)
             }
         },
         containerColor = Color.White

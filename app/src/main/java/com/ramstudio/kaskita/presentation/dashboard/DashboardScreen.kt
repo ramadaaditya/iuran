@@ -50,11 +50,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
+import com.ramstudio.kaskita.core.utils.AvatarUtils
 import com.ramstudio.kaskita.core.utils.formatCurrency
 import com.ramstudio.kaskita.domain.model.Community
 import com.ramstudio.kaskita.domain.model.TransactionCategory
@@ -71,6 +74,7 @@ import com.ramstudio.kaskita.ui.theme.TextDisabled
 import com.ramstudio.kaskita.ui.theme.TextHigh
 import com.ramstudio.kaskita.ui.theme.TextMedium
 import com.ramstudio.kaskita.ui.theme.WarningYellow
+import com.ramstudio.kaskita.ui.theme.White
 
 val dummyCommunities = listOf(
     Community(
@@ -358,7 +362,7 @@ private fun DashboardHeader(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Total Balance",
+                    text = stringResource(R.string.dashboard_total_balance),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextMedium
@@ -389,13 +393,13 @@ private fun DashboardHeader(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SummaryCard(
-                label = "Income",
+                label = stringResource(R.string.dashboard_income),
                 amount = totalIncome,
                 isPositive = true,
                 modifier = Modifier.weight(1f)
             )
             SummaryCard(
-                label = "Expense",
+                label = stringResource(R.string.dashboard_expense),
                 amount = totalExpense,
                 isPositive = false,
                 modifier = Modifier.weight(1f)
@@ -444,7 +448,7 @@ private fun CommunitySelector(
                 if (communities.size > 1) {
                     Icon(
                         imageVector = Icons.Default.ExpandMore,
-                        contentDescription = "Ganti komunitas",
+                        contentDescription = stringResource(R.string.dashboard_change_community_cd),
                         tint = TextMedium,
                         modifier = Modifier.size(18.dp)
                     )
@@ -580,13 +584,13 @@ private fun PendingApprovalsBanner(
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "$pendingCount waiting approvals",
+                    text = stringResource(R.string.dashboard_pending_waiting, pendingCount),
                     fontWeight = FontWeight.Bold,
                     color = TextHigh,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Tap to review",
+                    text = stringResource(R.string.dashboard_pending_tap_review),
                     fontSize = 12.sp,
                     color = AlertOrange
                 )
@@ -609,13 +613,13 @@ private fun RecentActivityHeader(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Transaction History",
+            text = stringResource(R.string.dashboard_history_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = TextHigh
         )
         Text(
-            text = "See all",
+            text = stringResource(R.string.common_see_all),
             style = MaterialTheme.typography.labelMedium,
             color = Primary,
             fontWeight = FontWeight.Medium
@@ -674,7 +678,7 @@ fun TransactionItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = transaction.sub,
+                text = transaction.subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = TextMedium,
                 maxLines = 1,
@@ -698,36 +702,27 @@ fun TransactionItem(
 
 @Composable
 private fun TransactionAvatar(transaction: TransactionUiModel) {
+    val displayName = transaction.initiatorName.ifBlank { stringResource(R.string.common_community_member) }
+    val initials = AvatarUtils.getInitials(displayName).ifBlank { "?" }
+    val avatarColor = AvatarUtils.getFallbackAvatarColor(
+        seed = transaction.initiatorName.ifBlank { transaction.id }
+    )
+
     Box(contentAlignment = Alignment.BottomEnd) {
         Box(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(transaction.iconBgColor.copy(alpha = 0.15f)),
+                .background(avatarColor),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = transaction.icon,
-                contentDescription = null,
-                tint = transaction.iconBgColor,
-                modifier = Modifier.size(22.dp)
+            Text(
+                text = initials,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = White
             )
         }
-        // Status indicator dot
-        val dotColor = when (transaction.status) {
-            TransactionStatus.SUCCESS -> SuccessGreen
-            TransactionStatus.PENDING -> WarningYellow
-            TransactionStatus.REJECTED -> ErrorRed
-        }
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(2.dp)
-                .clip(CircleShape)
-                .background(dotColor)
-        )
     }
 }
 
@@ -735,19 +730,19 @@ private fun TransactionAvatar(transaction: TransactionUiModel) {
 private fun TransactionStatusChip(status: TransactionStatus) {
     val (label, bgColor, textColor) = when (status) {
         TransactionStatus.PENDING -> Triple(
-            "PENDING",
+            stringResource(R.string.status_pending),
             WarningYellow.copy(alpha = 0.15f),
             AlertOrange
         )
 
         TransactionStatus.SUCCESS -> Triple(
-            "SUKSES",
+            stringResource(R.string.status_success),
             SuccessGreen.copy(alpha = 0.15f),
             SuccessGreen
         )
 
         TransactionStatus.REJECTED -> Triple(
-            "DITOLAK",
+            stringResource(R.string.status_rejected),
             ErrorRed.copy(alpha = 0.12f),
             ErrorRed
         )
@@ -802,13 +797,13 @@ private fun DashboardEmptyState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Belum ada komunitas",
+            text = stringResource(R.string.dashboard_empty_community_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = TextHigh
         )
         Text(
-            text = "Buat atau bergabung ke komunitas\ndi tab Komunitas",
+            text = stringResource(R.string.dashboard_empty_community_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = TextMedium,
             modifier = Modifier.padding(top = 8.dp),
@@ -832,13 +827,13 @@ private fun EmptyTransactionState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Belum ada transaksi",
+            text = stringResource(R.string.dashboard_empty_transaction_title),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
             color = TextMedium
         )
         Text(
-            text = "Transaksi komunitas akan muncul di sini",
+            text = stringResource(R.string.dashboard_empty_transaction_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = TextDisabled,
             modifier = Modifier.padding(top = 4.dp)

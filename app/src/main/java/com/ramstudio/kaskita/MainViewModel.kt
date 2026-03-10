@@ -3,7 +3,7 @@ package com.ramstudio.kaskita
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramstudio.kaskita.domain.repository.AuthRepository
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow

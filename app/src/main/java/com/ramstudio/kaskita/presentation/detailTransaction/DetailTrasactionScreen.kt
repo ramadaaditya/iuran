@@ -62,14 +62,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
-import com.ramstudio.kaskita.domain.model.TransactionCategory
-import com.ramstudio.kaskita.domain.model.TransactionStatus
-import com.ramstudio.kaskita.domain.model.TransactionUiModel
+import com.ramstudio.kaskita.core.domain.model.TransactionCategory
+import com.ramstudio.kaskita.core.domain.model.TransactionStatus
+import com.ramstudio.kaskita.core.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.presentation.transaction.TransactionStatusChip
-import com.ramstudio.kaskita.ui.theme.ErrorRed
-import com.ramstudio.kaskita.ui.theme.SuccessGreen
-import com.ramstudio.kaskita.ui.theme.WarningYellow
-import com.ramstudio.kaskita.ui.theme.White
+import com.ramstudio.kaskita.core.ui.theme.ErrorRed
+import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
+import com.ramstudio.kaskita.core.ui.theme.WarningYellow
+import com.ramstudio.kaskita.core.ui.theme.White
 
 fun NavController.navigateToDetailTransaction(id: String) {
     navigate(ScreenRoute.DetailTransaction(id))

@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramstudio.kaskita.R
-import com.ramstudio.kaskita.ui.theme.KasKitaTheme
+import com.ramstudio.kaskita.core.ui.theme.KasKitaTheme
 
 // --- Tema Warna Selaras ---
 val BgColor = Color(0xFFFBFCFD)

@@ -1,11 +1,11 @@
 package com.ramstudio.kaskita.core.di
 
+import com.ramstudio.kaskita.core.data.repository.offline.OfflineFirstCommunityRepository
+import com.ramstudio.kaskita.core.data.repository.offline.OfflineFirstTransactionRepository
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
+import com.ramstudio.kaskita.core.domain.repository.CommunityRepository
+import com.ramstudio.kaskita.core.domain.repository.TransactionRepository
 import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
-import com.ramstudio.kaskita.data.repository.offline.OfflineFirstCommunityRepository
-import com.ramstudio.kaskita.data.repository.offline.OfflineFirstTransactionRepository
-import com.ramstudio.kaskita.domain.repository.AuthRepository
-import com.ramstudio.kaskita.domain.repository.ICommunityRepository
-import com.ramstudio.kaskita.domain.repository.ITransactionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -18,12 +18,12 @@ abstract class RepositoryModule {
     @Binds
     abstract fun bindTransactionRepository(
         impl: OfflineFirstTransactionRepository
-    ): ITransactionRepository
+    ): TransactionRepository
 
     @Binds
     abstract fun bindCommunityRepository(
         impl: OfflineFirstCommunityRepository
-    ): ICommunityRepository
+    ): CommunityRepository
 
     @Binds
     abstract fun bindAuthRepository(

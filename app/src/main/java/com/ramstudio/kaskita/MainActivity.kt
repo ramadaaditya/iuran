@@ -17,9 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ramstudio.kaskita.ui.KasKitaApp
-import com.ramstudio.kaskita.ui.rememberKaskitaState
-import com.ramstudio.kaskita.ui.theme.KasKitaTheme
+import com.ramstudio.kaskita.core.ui.rememberKaskitaState
+import com.ramstudio.kaskita.core.ui.theme.KasKitaTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

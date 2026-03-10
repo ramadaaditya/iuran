@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ramstudio.kaskita.domain.model.User
+import com.ramstudio.kaskita.core.domain.model.User
 import com.ramstudio.kaskita.presentation.settings.CardBorder
 import com.ramstudio.kaskita.presentation.settings.PrimaryBlue
 import com.ramstudio.kaskita.presentation.settings.TextMainBlack

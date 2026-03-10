@@ -1,5 +1,7 @@
 package com.ramstudio.kaskita.presentation.transaction
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -62,10 +64,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ramstudio.kaskita.core.domain.model.TransactionCategory
+import com.ramstudio.kaskita.core.ui.theme.ErrorRed
+import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
-import com.ramstudio.kaskita.domain.model.TransactionCategory
-import com.ramstudio.kaskita.ui.theme.ErrorRed
-import com.ramstudio.kaskita.ui.theme.SuccessGreen
 
 @Composable
 fun AddTransactionScreen(
@@ -79,6 +81,12 @@ fun AddTransactionScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalAppSnackbarHostState.current
+    val receiptPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        viewModel.onReceiptSelected(uri)
+
+    }
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
@@ -104,7 +112,7 @@ fun AddTransactionScreen(
         onTypeChange = viewModel::onTypeChange,
         onAmountChange = viewModel::onAmountChange,
         onDescriptionChange = viewModel::onDescriptionChange,
-        onAttachReceipt = viewModel::onReceiptAttached,
+        onAttachReceipt = { receiptPickerLauncher.launch("image/**") },
         onCloseClick = onCloseClick,
         onSubmitClick = { viewModel.submitTransaction(communityId, isAdmin) },
         isLoading = uiState.isLoading,

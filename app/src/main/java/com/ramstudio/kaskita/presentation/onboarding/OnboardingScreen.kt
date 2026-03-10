@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.ramstudio.kaskita.ui.theme.Primary
+import com.ramstudio.kaskita.core.ui.theme.Primary
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(

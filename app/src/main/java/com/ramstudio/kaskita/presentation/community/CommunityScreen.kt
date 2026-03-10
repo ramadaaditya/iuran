@@ -57,7 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
-import com.ramstudio.kaskita.domain.model.Community
+import com.ramstudio.kaskita.core.domain.model.Community
 import com.ramstudio.kaskita.presentation.dashboard.component.CreateCommunityDialog
 import com.ramstudio.kaskita.presentation.dashboard.component.JoinCommunityDialog
 

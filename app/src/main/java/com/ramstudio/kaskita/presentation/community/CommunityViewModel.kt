@@ -4,10 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
-import com.ramstudio.kaskita.domain.model.Community
-import com.ramstudio.kaskita.domain.model.Result
-import com.ramstudio.kaskita.domain.repository.AuthRepository
-import com.ramstudio.kaskita.domain.repository.ICommunityRepository
+import com.ramstudio.kaskita.core.domain.model.Community
+import com.ramstudio.kaskita.core.domain.model.Result
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
+import com.ramstudio.kaskita.core.domain.repository.CommunityRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,7 @@ data class DashboardUiState(
 
 @HiltViewModel
 class CommunityViewModel @Inject constructor(
-    private val repository: ICommunityRepository,
+    private val repository: CommunityRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
     // Backing property untuk state
@@ -46,7 +46,7 @@ class CommunityViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val user = authRepository.getUser()
-                _uiState.update { it.copy(currentUserId = user.id) }
+                _uiState.update { it.copy(currentUserId = user?.id) }
             } catch (_: Exception) {
                 // User not logged in or error fetching user
                 _uiState.update { it.copy(currentUserId = null) }

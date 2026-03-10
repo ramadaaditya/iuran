@@ -2,14 +2,14 @@ package com.ramstudio.kaskita.core.di
 
 import android.content.Context
 import androidx.room.Room
-import com.ramstudio.kaskita.data.local.KasKitaDatabase
-import com.ramstudio.kaskita.data.local.dao.CommunityDao
-import com.ramstudio.kaskita.data.local.dao.TransactionDao
 import com.ramstudio.kaskita.BuildConfig
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.ramstudio.kaskita.core.data.local.KasKitaDatabase
+import com.ramstudio.kaskita.core.data.local.dao.CommunityDao
+import com.ramstudio.kaskita.core.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth

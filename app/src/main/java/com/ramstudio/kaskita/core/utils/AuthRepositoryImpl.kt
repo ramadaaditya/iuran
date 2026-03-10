@@ -10,9 +10,10 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.ramstudio.kaskita.domain.model.ProfileDto
-import com.ramstudio.kaskita.domain.model.User
-import com.ramstudio.kaskita.domain.repository.AuthRepository
+import com.ramstudio.kaskita.core.common.Result
+import com.ramstudio.kaskita.core.domain.model.ProfileDto
+import com.ramstudio.kaskita.core.domain.model.User
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
@@ -55,7 +56,6 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteAccount() {
-        // Requires an SQL RPC in Supabase, typically named "delete_my_account".
         supabase.postgrest.rpc(
             function = "delete_my_account",
             parameters = buildJsonObject { }
@@ -63,87 +63,74 @@ class AuthRepositoryImpl @Inject constructor(
         supabase.auth.signOut()
     }
 
-    override suspend fun getUser(): User {
-        val authUser = supabase.auth.currentUserOrNull() ?: throw Exception("User not logged in")
+    override suspend fun getUser(): User? {
+        return try {
+            val authUser = supabase.auth.currentUserOrNull() ?: return null
 
-        val profile = supabase.from("profiles")
-            .select {
-                filter {
-                    eq("id", authUser.id)
-                }
-            }.decodeSingle<ProfileDto>()
+            val profile = supabase.from("profiles")
+                .select {
+                    filter {
+                        eq("id", authUser.id)
+                    }
+                }.decodeSingleOrNull<ProfileDto>()
 
-        return User(
-            id = profile.id,
-            name = profile.fullName ?: "No Name",
-            role = "",
-            initial = AvatarUtils.getInitials(profile.fullName),
-            email = authUser.email,
-        )
+            if (profile == null) {
+                return null
+            }
+            User(
+                id = profile.id,
+                name = profile.fullName ?: "No Name",
+                role = "",
+                initial = AvatarUtils.getInitials(profile.fullName),
+                email = authUser.email,
+            )
+        } catch (e: Exception) {
+            // 5. Tangkap semua error eksternal (Internet mati, Supabase down, Timeout)
+            // TODO: Sangat disarankan untuk mencetak log di sini (misal: Timber.e(e))
+            // Agar aplikasi tidak crash, kita anggap saja gagal mengambil user (kembalikan null)
+            null
+        }
     }
 
 
-    override fun signUp(
-        emailValue: String,
-        passwordValue: String,
+    override suspend fun signUp(
+        email: String,
+        password: String,
         fullName: String
-    ): Flow<Result<String>> =
-        flow {
-            emit(Result.Loading)
-            try {
-                // Validate email format
-                if (!emailValue.matches(EMAIL_PATTERN.toRegex())) {
-                    emit(Result.Error("Format email tidak valid"))
-                    return@flow
-                }
-
-                // Validate password strength
-                if (passwordValue.length < 6) {
-                    emit(Result.Error("Password minimal 6 karakter"))
-                    return@flow
-                }
-
-                supabase.auth.signUpWith(Email) {
-                    email = emailValue
-                    password = passwordValue
-                    data = buildJsonObject {
-                        put("full_name", fullName)
-                    }
-                }
-                Log.e(TAG, "Berhasil signup")
-                emit(Result.Success("Sign up successfully! Please check your email."))
-            } catch (e: Exception) {
-                emit(
-                    Result.Error(
-                        AppErrorMapper.fromThrowable(
-                            throwable = e,
-                            fallback = "Gagal membuat akun. Silakan coba lagi."
-                        )
-                    )
-                )
+    ): Result<Unit> {
+        return try {
+            if (!email.matches(EMAIL_PATTERN.toRegex())) {
+                return Result.Error(IllegalArgumentException("Format email tidak valid"))
             }
-        }
 
-    override fun signInWithEmail(emailValue: String, passwordValue: String): Flow<Result<String>> =
-        flow {
-            emit(Result.Loading)
-            try {
-                supabase.auth.signInWith(Email) {
-                    email = emailValue
-                    password = passwordValue
-                }
-                emit(Result.Success("Sign in Successfully!"))
-            } catch (e: Exception) {
-                emit(
-                    Result.Error(
-                        AppErrorMapper.fromThrowable(
-                            throwable = e,
-                            fallback = "Gagal masuk ke akun. Periksa kembali data Anda."
-                        )
-                    )
-                )
+            if (password.length < 6) {
+                return Result.Error(IllegalArgumentException("Password minimal 6 karakter"))
             }
+
+            supabase.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+                data = buildJsonObject {
+                    put("full_name", fullName)
+                }
+            }
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
         }
+    }
+
+    override suspend fun signInWithEmail(email: String, password: String): Result<Unit> {
+        return try {
+            supabase.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
 
     fun createNonce(input: String): String {
         val md = MessageDigest.getInstance("SHA-256")

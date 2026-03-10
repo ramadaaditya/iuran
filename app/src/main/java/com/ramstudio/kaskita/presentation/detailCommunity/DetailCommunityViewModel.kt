@@ -3,12 +3,12 @@ package com.ramstudio.kaskita.presentation.detailCommunity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
-import com.ramstudio.kaskita.domain.model.Community
-import com.ramstudio.kaskita.domain.model.Transaction
-import com.ramstudio.kaskita.domain.model.User
-import com.ramstudio.kaskita.domain.repository.AuthRepository
-import com.ramstudio.kaskita.domain.repository.ICommunityRepository
-import com.ramstudio.kaskita.domain.repository.ITransactionRepository
+import com.ramstudio.kaskita.core.domain.model.Community
+import com.ramstudio.kaskita.core.domain.model.Transaction
+import com.ramstudio.kaskita.core.domain.model.User
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
+import com.ramstudio.kaskita.core.domain.repository.CommunityRepository
+import com.ramstudio.kaskita.core.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,8 +31,8 @@ data class DetailCommunityUiState(
 
 @HiltViewModel
 class DetailCommunityViewModel @Inject constructor(
-    private val communityRepository: ICommunityRepository,
-    private val transactionRepository: ITransactionRepository,
+    private val communityRepository: CommunityRepository,
+    private val transactionRepository: TransactionRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 

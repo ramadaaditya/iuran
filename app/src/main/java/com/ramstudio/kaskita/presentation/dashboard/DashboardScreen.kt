@@ -1,6 +1,5 @@
 package com.ramstudio.kaskita.presentation.dashboard
 
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,27 +54,26 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
+import com.ramstudio.kaskita.core.domain.model.Community
+import com.ramstudio.kaskita.core.domain.model.TransactionCategory
+import com.ramstudio.kaskita.core.domain.model.TransactionStatus
+import com.ramstudio.kaskita.core.domain.model.TransactionUiModel
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
-import com.ramstudio.kaskita.domain.model.Community
-import com.ramstudio.kaskita.domain.model.TransactionCategory
-import com.ramstudio.kaskita.domain.model.TransactionStatus
-import com.ramstudio.kaskita.domain.model.TransactionUiModel
-import com.ramstudio.kaskita.ui.theme.AlertOrange
-import com.ramstudio.kaskita.ui.theme.Border
-import com.ramstudio.kaskita.ui.theme.DividerColor
-import com.ramstudio.kaskita.ui.theme.ErrorRed
-import com.ramstudio.kaskita.ui.theme.InfoBlue
-import com.ramstudio.kaskita.ui.theme.KasKitaTheme
-import com.ramstudio.kaskita.ui.theme.Primary
-import com.ramstudio.kaskita.ui.theme.SuccessGreen
-import com.ramstudio.kaskita.ui.theme.TextDisabled
-import com.ramstudio.kaskita.ui.theme.TextHigh
-import com.ramstudio.kaskita.ui.theme.TextMedium
-import com.ramstudio.kaskita.ui.theme.WarningYellow
-import com.ramstudio.kaskita.ui.theme.White
+import com.ramstudio.kaskita.core.ui.theme.AlertOrange
+import com.ramstudio.kaskita.core.ui.theme.Border
+import com.ramstudio.kaskita.core.ui.theme.DividerColor
+import com.ramstudio.kaskita.core.ui.theme.ErrorRed
+import com.ramstudio.kaskita.core.ui.theme.InfoBlue
+import com.ramstudio.kaskita.core.ui.theme.KasKitaTheme
+import com.ramstudio.kaskita.core.ui.theme.Primary
+import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
+import com.ramstudio.kaskita.core.ui.theme.TextDisabled
+import com.ramstudio.kaskita.core.ui.theme.TextHigh
+import com.ramstudio.kaskita.core.ui.theme.TextMedium
+import com.ramstudio.kaskita.core.ui.theme.WarningYellow
+import com.ramstudio.kaskita.core.ui.theme.White
 import java.text.NumberFormat
 import java.util.Locale
-
 
 
 val dummyCommunities = listOf(

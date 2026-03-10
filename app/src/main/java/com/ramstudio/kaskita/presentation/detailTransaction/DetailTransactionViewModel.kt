@@ -2,14 +2,15 @@ package com.ramstudio.kaskita.presentation.detailTransaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.common.Result
+import com.ramstudio.kaskita.core.domain.model.TransactionStatus
+import com.ramstudio.kaskita.core.domain.model.TransactionUiModel
+import com.ramstudio.kaskita.core.domain.model.User
+import com.ramstudio.kaskita.core.domain.model.toUiModel
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
+import com.ramstudio.kaskita.core.domain.repository.CommunityRepository
+import com.ramstudio.kaskita.core.domain.repository.TransactionRepository
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
-import com.ramstudio.kaskita.domain.model.TransactionStatus
-import com.ramstudio.kaskita.domain.model.TransactionUiModel
-import com.ramstudio.kaskita.domain.model.User
-import com.ramstudio.kaskita.domain.model.toUiModel
-import com.ramstudio.kaskita.domain.repository.AuthRepository
-import com.ramstudio.kaskita.domain.repository.ICommunityRepository
-import com.ramstudio.kaskita.domain.repository.ITransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,8 +31,8 @@ data class DetailTransactionUiState(
 
 @HiltViewModel
 class DetailTransactionViewModel @Inject constructor(
-    private val repository: ITransactionRepository,
-    private val communityRepository: ICommunityRepository,
+    private val repository: TransactionRepository,
+    private val communityRepository: CommunityRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DetailTransactionUiState())
@@ -58,7 +59,9 @@ class DetailTransactionViewModel @Inject constructor(
                         .associateBy({ it.id }, { it.name })
                     detail.toUiModel().copy(
                         initiatorName = when {
-                            memberNameById[detail.userId].isNullOrBlank().not() -> memberNameById[detail.userId].orEmpty()
+                            memberNameById[detail.userId].isNullOrBlank()
+                                .not() -> memberNameById[detail.userId].orEmpty()
+
                             currentUser != null && detail.userId == currentUser.id -> currentUser.name
                             else -> "Community Member"
                         }
@@ -124,49 +127,38 @@ class DetailTransactionViewModel @Inject constructor(
                 return@launch
             }
             _uiState.update { it.copy(isActionLoading = true, error = null) }
-            try {
-                val currentUser = authRepository.getUser()
+            val currentUser = authRepository.getUser()
 
-                val result = repository.updateTransaction(
-                    transactionId = transactionId,
-                    newStatus = newStatus,
-                    approvedBy = currentUser.id
-                )
+            val result = repository.updateTransaction(
+                transactionId = transactionId,
+                newStatus = newStatus,
+                approvedBy = currentUser?.id.orEmpty()
+            )
 
-                result.fold(
-                    onSuccess = { updatedTransaction ->
-                        _uiState.update { state ->
-                            state.copy(
-                                isActionLoading = false,
-                                actionSuccess = successMessage,
-                                selectedTransaction = updatedTransaction.toUiModel().copy(
-                                    initiatorName = state.selectedTransaction?.initiatorName
-                                        ?: updatedTransaction.userId
-                                ),
+            when (result) {
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isActionLoading = false,
+                            error = AppErrorMapper.fromThrowable(
+                                throwable = result.throwable,
+                                fallback = "Gagal memperbarui transaksi. Silakan coba lagi."
                             )
-                        }
-                    },
-                    onFailure = { e ->
-                        _uiState.update {
-                            it.copy(
-                                isActionLoading = false,
-                                error = AppErrorMapper.fromThrowable(
-                                    throwable = e,
-                                    fallback = "Gagal memperbarui transaksi. Silakan coba lagi."
-                                )
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isActionLoading = false,
-                        error = AppErrorMapper.fromThrowable(
-                            throwable = e,
-                            fallback = "Gagal memperbarui transaksi. Silakan coba lagi."
                         )
-                    )
+                    }
+                }
+
+                is Result.Success -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            isActionLoading = false,
+                            actionSuccess = successMessage,
+                            selectedTransaction = result.data.toUiModel().copy(
+                                initiatorName = state.selectedTransaction?.initiatorName
+                                    ?: result.data.userId
+                            ),
+                        )
+                    }
                 }
             }
         }

@@ -1,15 +1,10 @@
 package com.ramstudio.kaskita.presentation.auth.register
 
-import android.content.ContentValues.TAG
-import android.content.Context
-import android.util.Log
-import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.common.Result
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
-import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
-import com.ramstudio.kaskita.core.utils.AuthResponse
-import com.ramstudio.kaskita.core.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,10 +14,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Immutable
 data class SignUpUiState(
     val isLoading: Boolean = false,
-    val message: String = "",
     val email: String = "",
     val password: String = "",
     val fullName: String = "",
@@ -38,105 +31,55 @@ sealed interface SignUpUiEvent {
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    private val authRepositoryImpl: AuthRepositoryImpl
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val _uiEvent = Channel<SignUpUiEvent>()
+    private val _uiEvent = Channel<SignUpUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    fun onFullNameChange(newValue: String) {
-        _uiState.update {
-            it.copy(
-                fullName = newValue,
-                fullNameError = null
-            )
-        }
+    fun onFullNameChange(fullName: String) = _uiState.update {
+        it.copy(fullName = fullName, fullNameError = null)
     }
 
-    fun onEmailChange(newValue: String) {
-        _uiState.update {
-            it.copy(
-                email = newValue, emailError = null
-            )
-        }
+
+    fun onEmailChange(email: String) = _uiState.update {
+        it.copy(email = email, emailError = null)
     }
 
-    fun onPasswordChange(newValue: String) {
-        _uiState.update {
-            it.copy(
-                password = newValue, passwordError = null
-            )
-        }
+    fun onPasswordChange(password: String) = _uiState.update {
+        it.copy(password = password, passwordError = null)
     }
 
-//    fun loginGoogle(activityContext: Context) {
-//        viewModelScope.launch {
-//            Log.d("LOGIN_FLOW", "Mulai login dari ViewModel")
-//
-//            authRepositoryImpl.signInCredentialManager(activityContext)
-//                .collect { result ->
-//                    when (result) {
-//                        is AuthResponse.Success -> {
-//                            Log.d(TAG, "loginGoogle: Login Sukses")
-//                        }
-//
-//                        is AuthResponse.Error -> {
-//                            Log.d(TAG, "loginGoogle: Login Gagal")
-//                        }
-//                    }
-//
-//                }
-//
-//        }
-//    }
 
     fun signUpWithEmail() {
         viewModelScope.launch {
-            authRepositoryImpl.signUp(
-                _uiState.value.email,
-                _uiState.value.password,
-                _uiState.value.fullName
+            _uiState.update { it.copy(isLoading = true) }
+            val result = authRepository.signUp(
+                email = uiState.value.email,
+                password = uiState.value.password,
+                fullName = uiState.value.fullName
             )
-                .collect { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false
-                                )
-                            }
-                            _uiEvent.send(SignUpUiEvent.ShowSnackbar(result.data))
-                            _uiEvent.send(SignUpUiEvent.NavigateSignIn)
-                        }
-
-                        is Result.Error -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false
-                                )
-                            }
-                            _uiEvent.send(
-                                SignUpUiEvent.ShowSnackbar(
-                                    AppErrorMapper.fromRawMessage(
-                                        rawMessage = result.message,
-                                        fallback = "Gagal membuat akun. Silakan coba lagi."
-                                    )
-                                )
-                            )
-                        }
-
-                        is Result.Loading -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = true
-                                )
-                            }
-                        }
-                    }
+            _uiState.update { it.copy(isLoading = false) }
+            when (result) {
+                is Result.Success -> {
+                    _uiEvent.send(SignUpUiEvent.ShowSnackbar("Akun Berhasil dibuat !"))
+                    _uiEvent.send(SignUpUiEvent.NavigateSignIn)
                 }
+
+                is Result.Error -> {
+                    _uiEvent.send(
+                        SignUpUiEvent.ShowSnackbar(
+                            AppErrorMapper.fromRawMessage(
+                                rawMessage = "Terjadi kesalahan",
+                                fallback = "Gagal membuat akun. Silakan coba lagi."
+                            )
+                        )
+                    )
+                }
+            }
         }
     }
 }

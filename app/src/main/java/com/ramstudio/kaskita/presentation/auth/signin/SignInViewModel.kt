@@ -1,11 +1,10 @@
 package com.ramstudio.kaskita.presentation.auth.signin
 
-import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ramstudio.kaskita.core.common.Result
+import com.ramstudio.kaskita.core.domain.repository.AuthRepository
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
-import com.ramstudio.kaskita.core.utils.AuthRepositoryImpl
-import com.ramstudio.kaskita.core.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
-@Immutable
 data class SignInUiState(
     val isLoading: Boolean = false,
     val message: String = "",
@@ -34,7 +32,7 @@ sealed interface SignInUiEvent {
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
-    private val authRepositoryImpl: AuthRepositoryImpl
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState = _uiState.asStateFlow()
@@ -58,66 +56,31 @@ class SignInViewModel @Inject constructor(
         }
     }
 
-//    fun loginGoogle(activityContext: Context) {
-//        viewModelScope.launch {
-//            Log.d("LOGIN_FLOW", "Mulai login dari ViewModel")
-//
-//            authRepository.signInCredentialManager(activityContext)
-//                .collect { result ->
-//                    when (result) {
-//                        is AuthResponse.Success -> {
-//                            Log.d(TAG, "loginGoogle: Login Sukses")
-//                        }
-//
-//                        is AuthResponse.Error -> {
-//                            Log.d(TAG, "loginGoogle: Login Gagal")
-//                        }
-//                    }
-//
-//                }
-//
-//        }
-//    }
-
     fun signInWithEmail() {
         viewModelScope.launch {
-            authRepositoryImpl.signInWithEmail(_uiState.value.email, uiState.value.password)
-                .collect { result ->
-                    when (result) {
-                        is Result.Error -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false
-                                )
-                            }
-                            _uiEvent.send(
-                                SignInUiEvent.ShowSnackbar(
-                                    AppErrorMapper.fromRawMessage(
-                                        rawMessage = result.message,
-                                        fallback = "Gagal masuk ke akun. Silakan coba lagi."
-                                    )
-                                )
+            _uiState.update { it.copy(isLoading = true) }
+            val result =
+                authRepository.signInWithEmail(_uiState.value.email, uiState.value.password)
+            _uiState.update {
+                it.copy(isLoading = false)
+            }
+            when (result) {
+                is Result.Error -> {
+                    _uiEvent.send(
+                        SignInUiEvent.ShowSnackbar(
+                            AppErrorMapper.fromRawMessage(
+                                rawMessage = "Terjadi kesalahan",
+                                fallback = "Gagal masuk ke akun. Silakan coba lagi."
                             )
-                        }
-
-                        Result.Loading -> {
-                            _uiState.update {
-                                it.copy(isLoading = true)
-                            }
-                        }
-
-                        is Result.Success -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false
-                                )
-                            }
-                            _uiEvent.send(SignInUiEvent.ShowSnackbar(result.data))
-                            _uiEvent.send(SignInUiEvent.NavigateHome)
-                        }
-                    }
-
+                        )
+                    )
                 }
+
+                is Result.Success -> {
+                    _uiEvent.send(SignInUiEvent.ShowSnackbar("Berhasil login"))
+                    _uiEvent.send(SignInUiEvent.NavigateHome)
+                }
+            }
         }
     }
 }

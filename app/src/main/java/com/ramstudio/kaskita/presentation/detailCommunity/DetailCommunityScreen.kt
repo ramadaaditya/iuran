@@ -74,16 +74,16 @@ import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.utils.formatCurrency
 import com.ramstudio.kaskita.core.utils.formatRupiahTransaction
 import com.ramstudio.kaskita.core.utils.formatTime
-import com.ramstudio.kaskita.domain.model.Community
-import com.ramstudio.kaskita.domain.model.CommunityTab
-import com.ramstudio.kaskita.domain.model.Transaction
-import com.ramstudio.kaskita.domain.model.TransactionCategory
-import com.ramstudio.kaskita.domain.model.TransactionStatus
-import com.ramstudio.kaskita.domain.model.User
+import com.ramstudio.kaskita.core.domain.model.Community
+import com.ramstudio.kaskita.core.domain.model.CommunityTab
+import com.ramstudio.kaskita.core.domain.model.Transaction
+import com.ramstudio.kaskita.core.domain.model.TransactionCategory
+import com.ramstudio.kaskita.core.domain.model.TransactionStatus
+import com.ramstudio.kaskita.core.domain.model.User
 import com.ramstudio.kaskita.presentation.community.AdminBadge
-import com.ramstudio.kaskita.ui.theme.ErrorRed
-import com.ramstudio.kaskita.ui.theme.SuccessGreen
-import com.ramstudio.kaskita.ui.theme.WarningYellow
+import com.ramstudio.kaskita.core.ui.theme.ErrorRed
+import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
+import com.ramstudio.kaskita.core.ui.theme.WarningYellow
 import kotlin.math.abs
 
 private val FinanceBlue = Color(0xFF1D4ED8)

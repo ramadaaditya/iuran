@@ -19,7 +19,7 @@ import com.ramstudio.kaskita.presentation.detailTransaction.TransactionDetailsSc
 import com.ramstudio.kaskita.presentation.settings.SettingsScreen
 import com.ramstudio.kaskita.presentation.transaction.AddTransactionScreen
 import com.ramstudio.kaskita.presentation.transaction.TransactionScreen
-import com.ramstudio.kaskita.ui.KasKitaState
+import com.ramstudio.kaskita.core.ui.KasKitaState
 
 @Composable
 fun AppNavHost(

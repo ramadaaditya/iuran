@@ -1,9 +1,9 @@
 package com.ramstudio.kaskita.core.di
 
-import com.ramstudio.kaskita.data.datasource.remote.CommunityRemoteDataSource
-import com.ramstudio.kaskita.data.datasource.remote.CommunityRemoteDataSourceImpl
-import com.ramstudio.kaskita.data.datasource.remote.TransactionRemoteDataSource
-import com.ramstudio.kaskita.data.datasource.remote.TransactionRemoteDataSourceImpl
+import com.ramstudio.kaskita.core.data.datasource.remote.CommunityRemoteDataSource
+import com.ramstudio.kaskita.core.data.datasource.remote.CommunityRemoteDataSourceImpl
+import com.ramstudio.kaskita.core.data.datasource.remote.TransactionRemoteDataSource
+import com.ramstudio.kaskita.core.data.datasource.remote.TransactionRemoteDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

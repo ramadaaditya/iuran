@@ -3,9 +3,9 @@ package com.ramstudio.kaskita.presentation.transaction
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
-import com.ramstudio.kaskita.domain.model.TransactionUiModel
-import com.ramstudio.kaskita.domain.model.toUiModel
-import com.ramstudio.kaskita.domain.repository.ITransactionRepository
+import com.ramstudio.kaskita.core.domain.model.TransactionUiModel
+import com.ramstudio.kaskita.core.domain.model.toUiModel
+import com.ramstudio.kaskita.core.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,7 @@ data class TransactionUiState(
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
-    private val repository: ITransactionRepository,
+    private val repository: TransactionRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransactionUiState())

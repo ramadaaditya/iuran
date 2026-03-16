@@ -18,8 +18,10 @@ data class TransactionEntity(
     val userId: String,
     val amount: Double,
     val description: String?,
+    val rejectionReason: String? = null,
     val createdAt: Long,
     val type: String,
     val status: String,
     val updatedAt: Long,
+    val proofUrl: String? = null,
 )

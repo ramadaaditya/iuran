@@ -1,6 +1,6 @@
 package com.ramstudio.kaskita.core.data.datasource.remote
 
-import android.net.Uri
+import androidx.core.net.toUri
 import android.util.Log
 import com.ramstudio.kaskita.core.common.Result
 import com.ramstudio.kaskita.core.domain.model.Transaction
@@ -14,12 +14,12 @@ import io.github.jan.supabase.storage.storage
 import io.github.jan.supabase.storage.upload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.time.Duration.Companion.days
 
 @Singleton
 class TransactionRemoteDataSourceImpl @Inject constructor(
@@ -47,7 +47,7 @@ class TransactionRemoteDataSourceImpl @Inject constructor(
                 }
                 .decodeSingle<TransactionDto>()
             result.toDomain()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 
@@ -110,16 +110,27 @@ class TransactionRemoteDataSourceImpl @Inject constructor(
     override suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,
-        approvedBy: String
+        approvedBy: String,
+        rejectionReason: String?
     ): Result<Transaction> {
         return try {
             when (newStatus) {
                 TransactionStatus.PENDING -> throw Exception("Tidak bisa set status ke PENDING")
-                TransactionStatus.REJECTED ->
+                TransactionStatus.REJECTED -> {
                     postgrest.rpc("reject_transaction", buildJsonObject {
                         put("p_transaction_id", transactionId)
                         put("p_approved_by", approvedBy)
                     })
+                    if (!rejectionReason.isNullOrBlank()) {
+                        postgrest
+                            .from("transactions")
+                            .update(
+                                buildJsonObject { put("rejection_reason", rejectionReason) }
+                            ) {
+                                filter { eq("id", transactionId) }
+                            }
+                    }
+                }
 
                 TransactionStatus.SUCCESS -> postgrest.rpc("approve_transaction", buildJsonObject {
                     put("p_transaction_id", transactionId)
@@ -144,13 +155,57 @@ class TransactionRemoteDataSourceImpl @Inject constructor(
         }
     }
 
+    override suspend fun resubmitTransaction(
+        transactionId: String,
+        type: String,
+        amount: Long,
+        description: String,
+        proofUrl: String?
+    ): Result<Transaction> {
+        return try {
+            val body = buildJsonObject {
+                put("type", type)
+                put("amount", amount)
+                put("description", description)
+                put("status", "PENDING")
+                put("rejection_reason", JsonNull)
+                put("approved_by", JsonNull)
+                put("approved_at", JsonNull)
+                if (!proofUrl.isNullOrBlank()) put("proof_url", proofUrl)
+            }
+
+            // Perform the update
+            postgrest
+                .from("transactions")
+                .update(body) {
+                    filter { eq("id", transactionId) }
+                }
+
+            // Fetch the updated row separately — avoids RLS issues with
+            // "return=representation" where UPDATE is allowed but the updated
+            // row is not visible to the SELECT embedded inside the update response.
+            val updated = postgrest
+                .from("transactions")
+                .select {
+                    filter { eq("id", transactionId) }
+                    limit(1)
+                }
+                .decodeSingle<TransactionDto>()
+
+            Result.Success(updated.toDomain())
+        } catch (e: Exception) {
+            Log.e("TransactionRepo", "resubmitTransaction failed: ${e.message}", e)
+            Result.Error(e)
+        }
+    }
+
     override suspend fun uploadTransactionProof(
         localUri: String,
         userId: String,
         communityId: String
     ): Result<String> {
         return try {
-            val uri = Uri.parse(localUri)
+            val uri = localUri.toUri()
             val extension = uri.lastPathSegment
                 ?.substringAfterLast('.', "jpg")
                 ?.lowercase()
@@ -162,13 +217,9 @@ class TransactionRemoteDataSourceImpl @Inject constructor(
             val bucket = supabaseClient.storage.from(PROOF_BUCKET)
             bucket.upload(path = objectPath, uri = uri)
 
-            val signedOrPublicUrl = runCatching {
-                bucket.createSignedUrl(path = objectPath, expiresIn = 365.days)
-            }.getOrElse {
-                bucket.publicUrl(objectPath)
-            }
+            val publicUrl = bucket.publicUrl(objectPath)
 
-            Result.Success(signedOrPublicUrl)
+            Result.Success(publicUrl)
         } catch (e: Exception) {
             Result.Error(e)
         }

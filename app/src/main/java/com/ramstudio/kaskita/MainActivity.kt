@@ -12,9 +12,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramstudio.kaskita.core.ui.rememberKaskitaState
@@ -47,8 +48,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             KasKitaTheme {
                 val authState by mainViewModel.sessionStatus.collectAsStateWithLifecycle()
-                var showOnboarding by rememberSaveable { mutableStateOf(!onboardingCompleted) }
+                val selectedCommunityId by mainViewModel.selectedCommunityId.collectAsStateWithLifecycle()
+                val showOnboardingState = rememberSaveable { mutableStateOf(!onboardingCompleted) }
+                val showOnboarding by remember { showOnboardingState }
                 val appState = rememberKaskitaState()
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -58,11 +62,11 @@ class MainActivity : ComponentActivity() {
                         authState = authState,
                         showOnboarding = showOnboarding,
                         onOnboardingFinished = {
-                            appPreferences.edit()
-                                .putBoolean("onboarding_completed", true)
-                                .apply()
-                            showOnboarding = false
-                        }
+                            appPreferences.edit { putBoolean("onboarding_completed", true) }
+                            showOnboardingState.value = false
+                        },
+                        selectedCommunityId = selectedCommunityId,
+                        onSelectedCommunityChanged = mainViewModel::setSelectedCommunityId
                     )
                 }
             }

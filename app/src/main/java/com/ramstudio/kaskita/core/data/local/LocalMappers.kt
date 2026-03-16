@@ -64,10 +64,12 @@ fun Transaction.toEntity(now: Long): TransactionEntity {
         userId = userId,
         amount = amount,
         description = description,
+        rejectionReason = rejectionReason,
         createdAt = createdAt,
         type = type.name,
         status = status.name,
         updatedAt = now,
+        proofUrl = proofUrl,
     )
 }
 
@@ -78,8 +80,10 @@ fun TransactionEntity.toDomain(): Transaction {
         userId = userId,
         amount = amount,
         description = description,
+        rejectionReason = rejectionReason,
         createdAt = createdAt,
         type = runCatching { TransactionCategory.valueOf(type) }.getOrDefault(TransactionCategory.INCOME),
         status = runCatching { TransactionStatus.valueOf(status) }.getOrDefault(TransactionStatus.PENDING),
+        proofUrl = proofUrl,
     )
 }

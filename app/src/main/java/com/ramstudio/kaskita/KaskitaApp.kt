@@ -33,7 +33,9 @@ fun KasKitaApp(
     appState: KasKitaState,
     authState: AuthState,
     showOnboarding: Boolean,
-    onOnboardingFinished: () -> Unit
+    onOnboardingFinished: () -> Unit,
+    selectedCommunityId: String?,
+    onSelectedCommunityChanged: (String?) -> Unit
 ) {
     if (authState is AuthState.Loading) return
     if (showOnboarding) {
@@ -92,7 +94,9 @@ fun KasKitaApp(
             AppNavHost(
                 appState = appState,
                 innerPadding = innerPadding,
-                authState = authState
+                authState = authState,
+                selectedCommunityId = selectedCommunityId,
+                onSelectedCommunityChanged = onSelectedCommunityChanged
             )
         }
     }

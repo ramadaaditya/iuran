@@ -2,6 +2,7 @@ package com.ramstudio.kaskita.presentation.detailTransaction
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,17 +65,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.ramstudio.kaskita.core.navigation.ScreenRoute
-import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
+import coil3.compose.SubcomposeAsyncImage
+import com.ramstudio.kaskita.R
+import com.ramstudio.kaskita.core.domain.model.IconBgGreen
 import com.ramstudio.kaskita.core.domain.model.TransactionCategory
 import com.ramstudio.kaskita.core.domain.model.TransactionStatus
 import com.ramstudio.kaskita.core.domain.model.TransactionUiModel
-import com.ramstudio.kaskita.presentation.transaction.TransactionStatusChip
+import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.ui.theme.ErrorRed
 import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
-import com.ramstudio.kaskita.core.ui.theme.WarningYellow
 import com.ramstudio.kaskita.core.ui.theme.White
+import com.ramstudio.kaskita.core.utils.AvatarUtils
+import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
+import com.ramstudio.kaskita.presentation.transaction.TransactionStatusChip
 
+@Suppress("unused")
 fun NavController.navigateToDetailTransaction(id: String) {
     navigate(ScreenRoute.DetailTransaction(id))
 }
@@ -80,6 +89,7 @@ fun NavController.navigateToDetailTransaction(id: String) {
 fun TransactionDetailsScreen(
     transactionId: String,
     onBackClick: () -> Unit,
+    onEditClick: (communityId: String, isAdmin: Boolean, transactionId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DetailTransactionViewModel = hiltViewModel()
 ) {
@@ -123,7 +133,7 @@ fun TransactionDetailsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "Transaction not found",
+                        stringResource(R.string.detail_transaction_not_found),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -135,9 +145,11 @@ fun TransactionDetailsScreen(
             TransactionDetailsContent(
                 transaction = uiState.selectedTransaction!!,
                 isAdmin = uiState.canManageTransaction,
+                canEditTransaction = uiState.canEditTransaction,
                 onBackClick = onBackClick,
                 onApprove = { viewModel.approveTransaction(transactionId) },
-                onReject = { viewModel.rejectTransaction(transactionId) },
+                onReject = { reason -> viewModel.rejectTransaction(transactionId, reason) },
+                onEditClick = onEditClick,
                 modifier = modifier,
                 isActionLoading = uiState.isActionLoading,
             )
@@ -152,20 +164,25 @@ fun TransactionDetailsScreen(
 fun TransactionDetailsContent(
     transaction: TransactionUiModel,
     isAdmin: Boolean,
+    canEditTransaction: Boolean,
     onBackClick: () -> Unit,
     onApprove: () -> Unit,
-    onReject: () -> Unit,
+    onReject: (String) -> Unit,
+    onEditClick: (communityId: String, isAdmin: Boolean, transactionId: String) -> Unit,
     modifier: Modifier = Modifier,
     isActionLoading: Boolean,
 ) {
     var showRejectDialog by remember { mutableStateOf(false) }
+    var showEvidencePreview by remember { mutableStateOf(false) }
+    var rejectionReason by remember { mutableStateOf("") }
+    var rejectionReasonError by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Transaction Detail",
+                        text = stringResource(R.string.detail_transaction_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -175,12 +192,12 @@ fun TransactionDetailsContent(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
@@ -210,8 +227,27 @@ fun TransactionDetailsContent(
             AmountHeroSection(transaction = transaction)
             Spacer(modifier = Modifier.height(28.dp))
             TransactionDetailsCard(transaction = transaction)
+            val rejectionReason = transaction.rejectionReason
+            if (transaction.status == TransactionStatus.REJECTED && !rejectionReason.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                RejectionReasonCard(reason = rejectionReason)
+            }
+            if (canEditTransaction) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = {
+                        onEditClick(transaction.communityId, isAdmin, transaction.id)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.detail_transaction_edit_title))
+                }
+            }
             Spacer(modifier = Modifier.height(20.dp))
-            EvidenceSection()
+            EvidenceSection(
+                proofUrl = transaction.proofUrl,
+                onImageClick = { showEvidencePreview = true }
+            )
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -220,9 +256,30 @@ fun TransactionDetailsContent(
         RejectConfirmDialog(
             onDismiss = { showRejectDialog = false },
             onConfirm = {
-                showRejectDialog = false
-                onReject()
-            }
+                if (rejectionReason.isBlank()) {
+                    rejectionReasonError = true
+                } else {
+                    rejectionReasonError = false
+                    showRejectDialog = false
+                    onReject(rejectionReason.trim())
+                    rejectionReason = ""
+                }
+            },
+            reason = rejectionReason,
+            onReasonChange = {
+                rejectionReason = it
+                if (rejectionReasonError && it.isNotBlank()) {
+                    rejectionReasonError = false
+                }
+            },
+            isReasonError = rejectionReasonError
+        )
+    }
+
+    if (showEvidencePreview && !transaction.proofUrl.isNullOrBlank()) {
+        FullScreenEvidencePreview(
+            imageUrl = transaction.proofUrl,
+            onClose = { showEvidencePreview = false }
         )
     }
 }
@@ -231,36 +288,25 @@ fun TransactionDetailsContent(
 
 @Composable
 private fun AmountHeroSection(transaction: TransactionUiModel) {
+    val initial = AvatarUtils.getInitials(transaction.initiatorName)
+        .ifBlank { stringResource(R.string.common_unknown_initials) }
+
+    val avatarBg = if (transaction.isPositive) IconBgGreen else Color(0xFFFFCDD2)
+    val avatarTint = if (transaction.isPositive) SuccessGreen else ErrorRed
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Avatar with larger size as hero element
-        Box(contentAlignment = Alignment.BottomEnd) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(transaction.iconBgColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = transaction.icon,
-                    contentDescription = null,
-                    tint = transaction.iconBgColor,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-            val dotColor = when (transaction.status) {
-                TransactionStatus.SUCCESS -> SuccessGreen
-                TransactionStatus.PENDING -> WarningYellow
-                TransactionStatus.REJECTED -> ErrorRed
-            }
-            Box(
-                modifier = Modifier
-                    .size(18.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(White)
-                    .padding(3.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(dotColor)
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(avatarBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = avatarTint,
             )
         }
 
@@ -270,18 +316,15 @@ private fun AmountHeroSection(transaction: TransactionUiModel) {
             text = transaction.amountText,
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.ExtraBold,
-            color = if (transaction.isPositive) SuccessGreen
-            else MaterialTheme.colorScheme.onBackground
+            color = if (transaction.isPositive) SuccessGreen else ErrorRed
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        TransactionStatusChip(status = transaction.status)
-
         if (transaction.status == TransactionStatus.PENDING) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Waiting for admin approval",
+                text = stringResource(R.string.detail_transaction_waiting_approval),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -303,26 +346,29 @@ private fun TransactionDetailsCard(transaction: TransactionUiModel) {
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             DetailRow(
-                label = "Description",
+                label = stringResource(R.string.detail_transaction_label_description),
                 value = transaction.title
             )
             DetailDivider()
             DetailRow(
-                label = "Type",
-                value = if (transaction.isPositive) "Income (Deposit)" else "Expense (Withdrawal)"
+                label = stringResource(R.string.detail_transaction_label_type),
+                value = if (transaction.isPositive) {
+                    stringResource(R.string.detail_transaction_type_income)
+                } else {
+                    stringResource(R.string.detail_transaction_type_expense)
+                }
             )
             DetailDivider()
             DetailRow(
-                label = "Date",
-                value = transaction.timeText
+                label = stringResource(R.string.detail_transaction_label_date),
+                value = transaction.dateTimeText
             )
             DetailDivider()
             DetailRow(
-                label = "Submitted by",
-                value = transaction.initiatorName.ifBlank { "Community Member" }
+                label = stringResource(R.string.detail_transaction_label_submitted_by),
+                value = transaction.initiatorName.ifBlank { stringResource(R.string.common_community_member) }
             )
             DetailDivider()
-            // Status row with chip instead of plain text
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -331,13 +377,40 @@ private fun TransactionDetailsCard(transaction: TransactionUiModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Status",
+                    text = stringResource(R.string.detail_transaction_label_status),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
                 TransactionStatusChip(status = transaction.status)
             }
+        }
+    }
+}
+
+@Composable
+private fun RejectionReasonCard(reason: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.detail_transaction_rejection_reason_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = reason,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -378,39 +451,131 @@ private fun DetailDivider() {
 // ── Evidence section ──────────────────────────────────────────────────────────
 
 @Composable
-private fun EvidenceSection() {
+private fun EvidenceSection(
+    proofUrl: String?,
+    onImageClick: () -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Evidence",
+            text = stringResource(R.string.detail_transaction_evidence),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Placeholder — replace with AsyncImage (Coil) when evidence URL is available
-        Box(
+        if (proofUrl.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Rounded.Image,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.detail_transaction_no_evidence),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            SubcomposeAsyncImage(
+                model = proofUrl,
+                contentDescription = stringResource(R.string.detail_transaction_evidence_cd),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onImageClick() },
+                contentScale = ContentScale.Fit,
+                loading = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                },
+                error = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Rounded.Image,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.detail_transaction_failed_load_evidence),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FullScreenEvidencePreview(
+    imageUrl: String,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.92f))
+            .clickable { onClose() },
+        contentAlignment = Alignment.Center
+    ) {
+        SubcomposeAsyncImage(
+            model = imageUrl,
+            contentDescription = stringResource(R.string.detail_transaction_full_preview_cd),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Rounded.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(40.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                .padding(horizontal = 16.dp),
+            contentScale = ContentScale.Fit,
+            loading = { CircularProgressIndicator(color = White) },
+            error = {
                 Text(
-                    text = "No evidence uploaded",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.detail_transaction_failed_load_image),
+                    color = White,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
+        )
+
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 40.dp, end = 12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = stringResource(R.string.detail_transaction_close_preview_cd),
+                tint = White
+            )
         }
     }
 }
@@ -455,7 +620,10 @@ private fun AdminActionBar(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Reject", fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.detail_transaction_reject),
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             // Approve
@@ -484,7 +652,10 @@ private fun AdminActionBar(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Approve", fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.detail_transaction_approve),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -493,7 +664,13 @@ private fun AdminActionBar(
 
 
 @Composable
-private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+private fun RejectConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    reason: String,
+    onReasonChange: (String) -> Unit,
+    isReasonError: Boolean
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
@@ -514,20 +691,41 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
         },
         title = {
             Text(
-                "Reject Transaction?",
+                stringResource(R.string.detail_transaction_reject_dialog_title),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
         },
         text = {
-            Text(
-                "This action cannot be undone. The transaction will be marked as rejected.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(R.string.detail_transaction_reject_dialog_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = onReasonChange,
+                    label = { Text(stringResource(R.string.detail_transaction_reject_reason_label)) },
+                    placeholder = { Text(stringResource(R.string.detail_transaction_reject_reason_placeholder)) },
+                    isError = isReasonError,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ErrorRed,
+                        focusedLabelColor = ErrorRed
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (isReasonError) {
+                    Text(
+                        text = stringResource(R.string.detail_transaction_reject_reason_required),
+                        color = ErrorRed,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         },
         confirmButton = {
             Button(
@@ -535,12 +733,18 @@ private fun RejectConfirmDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = ErrorRed),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Yes, Reject", fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.detail_transaction_reject_confirm),
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.common_cancel),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -558,21 +762,27 @@ fun TransactionDetailsScreenPreview() {
             onBackClick = {},
             transaction = TransactionUiModel(
                 id = "TRX-001",
+                communityId = "comm-1",
+                userId = "user-1",
                 icon = Icons.AutoMirrored.Rounded.ReceiptLong,
                 iconBgColor = Color(0xFF6650A4),
                 title = "Pembayaran Iuran Bulanan",
-                subtitle = "Monas",
+                subtitle = "Aditya Ramada",
                 amount = 40000.00,
-                amountText = "Rp 40.000",
+                amountText = "- Rp 40.000",
                 isPositive = false,
-                timeText = "12 Jul 2025, 10:30",
+                timeText = "10:30",
+                dateTimeText = "10 Mar 2026, 10:30",
                 status = TransactionStatus.PENDING,
                 category = TransactionCategory.EXPENSE,
-                initiatorName = "Aditya Ramada"
+                initiatorName = "Aditya Ramada",
+                rejectionReason = null
             ),
             isAdmin = true,
+            canEditTransaction = false,
             onApprove = {},
             onReject = {},
+            onEditClick = { _, _, _ -> },
             isActionLoading = false
         )
     }

@@ -37,7 +37,11 @@ sealed class ScreenRoute {
     object Splash : ScreenRoute()
 
     @Serializable
-    data class AddTransactions(val communityId: String, val isAdmin: Boolean = false) : ScreenRoute()
+    data class AddTransactions(
+        val communityId: String,
+        val isAdmin: Boolean = false,
+        val editTransactionId: String? = null
+    ) : ScreenRoute()
 
     @Serializable
     data class DetailTransaction(val transactionId: String) : ScreenRoute()

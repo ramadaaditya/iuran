@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -41,42 +40,75 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val repository: CommunityRepository,
+    private val communityRepository: CommunityRepository,
     private val trxRepository: TransactionRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _selectedCommunityId = MutableStateFlow<String?>(null)
-    private val currentUserFlow: Flow<User?> = flow {
-        emit(authRepository.getUser())
 
-    }
+    private val currentUserFlow: StateFlow<User?> = flow {
+        emit(runCatching { authRepository.getUser() }.getOrNull())
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    private val communityFlow: Flow<List<Community>> = communityRepository.getAllCommunity()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val transactionFlow: Flow<List<Transaction>> = _selectedCommunityId
         .flatMapLatest { communityId ->
-            if (communityId == null) {
-                flowOf(emptyList())
-            } else {
-                trxRepository.getTransactionsByCommunity(communityId)
+            if (communityId == null) flowOf(emptyList())
+            else trxRepository.getTransactionsByCommunity(communityId)
+        }
+
+    // Resolve nama member per community yang aktif
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val memberMapFlow: Flow<Map<String, String>> = _selectedCommunityId
+        .flatMapLatest { communityId ->
+            if (communityId == null) flowOf(emptyMap())
+            else flow {
+                val members = runCatching {
+                    communityRepository.getMembersByCommunity(communityId)
+                }.getOrDefault(emptyList())
+                emit(members.associateBy({ it.id }, { it.name }))
             }
         }
 
     val uiState: StateFlow<DashboardUiState> =
         combine(
             currentUserFlow,
-            repository.getAllCommunity(),
+            communityFlow,
             _selectedCommunityId,
-            transactionFlow
-        ) { user, community, communityId, transactions ->
+            transactionFlow,
+            memberMapFlow
+        ) { user, community, communityId, transactions, memberMap ->
 
             val activeCommunity = community.find { it.id == communityId }
                 ?: community.firstOrNull()
 
-            val isAdmin = activeCommunity?.createdBy != null &&
-                    activeCommunity.createdBy == user?.id
+            // Keep internal selected id valid and stable against remote list changes.
+            if (activeCommunity?.id != communityId) {
+                _selectedCommunityId.value = activeCommunity?.id
+            }
 
-            val uiModel = transactions.map { it.toUiModel() }
+            val isAdmin = activeCommunity?.createdBy != null &&
+                activeCommunity.createdBy == user?.id
+
+            val uiModel = transactions.map { t ->
+                val fullName = when {
+                    memberMap[t.userId]?.isNotBlank() == true -> memberMap[t.userId]!!
+                    user != null && t.userId == user.id -> user.name
+                    else -> "Community Member"
+                }
+                t.toUiModel().copy(
+                    initiatorName = fullName,
+                    subtitle = fullName,
+                )
+            }
+
             val pendingCount = uiModel.count { it.status == TransactionStatus.PENDING }
             val totalIncome = transactions.filter {
                 it.type == TransactionCategory.INCOME && it.status == TransactionStatus.SUCCESS
@@ -84,7 +116,6 @@ class DashboardViewModel @Inject constructor(
 
             val totalExpense = transactions.filter {
                 it.type == TransactionCategory.EXPENSE && it.status == TransactionStatus.SUCCESS
-
             }.sumOf { it.amount }
 
             DashboardUiState(
@@ -105,8 +136,11 @@ class DashboardViewModel @Inject constructor(
             initialValue = DashboardUiState()
         )
 
+    fun setSelectedCommunityId(communityId: String?) {
+        _selectedCommunityId.value = communityId?.takeIf { it.isNotBlank() }
+    }
 
     fun selectCommunity(community: Community) {
-        _selectedCommunityId.update { community.id }
+        setSelectedCommunityId(community.id)
     }
 }

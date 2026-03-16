@@ -14,18 +14,22 @@ fun formatCurrency(nominal: Double): String {
     return formatter.format(nominal)
 }
 
-fun formatRupiahTransaction(amount: Double): String {
+fun formatRupiahTransaction(amount: Double, isExpense: Boolean = false): String {
     val localeID = Locale("id", "ID")
     val formatter = NumberFormat.getCurrencyInstance(localeID).apply {
         maximumFractionDigits = 0
         minimumFractionDigits = 0
     }
-
     val formatted = formatter.format(kotlin.math.abs(amount))
-    return if (amount >= 0) "+$formatted" else "-$formatted"
+    return if (isExpense) "-$formatted" else "+$formatted"
 }
 
 fun formatTime(timestamp: Long): String {
-    return SimpleDateFormat("dd MMM", Locale.getDefault())
+    return SimpleDateFormat("HH:mm", Locale.getDefault())
+        .format(Date(timestamp))
+}
+
+fun formatDateTime(timestamp: Long): String {
+    return SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         .format(Date(timestamp))
 }

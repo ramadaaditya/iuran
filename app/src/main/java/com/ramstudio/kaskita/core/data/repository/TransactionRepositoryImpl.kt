@@ -1,4 +1,4 @@
-package com.ramstudio.kaskita.core.data.repository.offline
+package com.ramstudio.kaskita.core.data.repository
 
 import android.util.Log
 import com.ramstudio.kaskita.core.common.Result
@@ -17,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OfflineFirstTransactionRepository @Inject constructor(
+class TransactionRepositoryImpl @Inject constructor(
     private val localDataSource: TransactionLocalDataSource,
     private val remoteDataSource: TransactionRemoteDataSource,
     private val syncPolicyStore: SyncPolicyStore,
@@ -25,11 +25,11 @@ class OfflineFirstTransactionRepository @Inject constructor(
 
     private val refreshMutex = Mutex()
 
+    // ─── Read (Offline-First / Cached) ────────────────────────────────────────
+
     override fun getAllTransactions(): Flow<List<Transaction>> {
         return localDataSource.observeAllTransactions()
-            .onStart {
-                refreshAllTransactions(force = false)
-            }
+            .onStart { refreshAllTransactions(force = false) }
     }
 
     override suspend fun getTransactionById(id: String): Transaction? {
@@ -46,10 +46,10 @@ class OfflineFirstTransactionRepository @Inject constructor(
 
     override fun getTransactionsByCommunity(communityId: String): Flow<List<Transaction>> {
         return localDataSource.observeTransactionsByCommunity(communityId)
-            .onStart {
-                refreshTransactionsByCommunity(communityId, force = false)
-            }
+            .onStart { refreshTransactionsByCommunity(communityId, force = false) }
     }
+
+    // ─── Write (Remote + update cache) ────────────────────────────────────────
 
     override suspend fun submitTransaction(
         communityId: String,
@@ -68,41 +68,73 @@ class OfflineFirstTransactionRepository @Inject constructor(
             proofUrl = proofUrl,
         )
 
-        when (result) {
-            is Result.Error -> {}
-            is Result.Success -> {
-                localDataSource.upsertTransaction(result.data)
-                syncPolicyStore.markSynced(syncKeyCommunityTransactions(result.data.communityId))
-
-            }
+        if (result is Result.Success) {
+            localDataSource.upsertTransaction(result.data)
+            syncPolicyStore.markSynced(syncKeyCommunityTransactions(result.data.communityId))
         }
+
         return result
     }
 
     override suspend fun updateTransaction(
         transactionId: String,
         newStatus: TransactionStatus,
-        approvedBy: String
+        approvedBy: String,
+        rejectionReason: String?
     ): Result<Transaction> {
         val result = remoteDataSource.updateTransaction(
             transactionId = transactionId,
             newStatus = newStatus,
             approvedBy = approvedBy,
+            rejectionReason = rejectionReason,
         )
 
-        when (result) {
-            is Result.Error -> {
-
-            }
-
-            is Result.Success -> {
-                localDataSource.upsertTransaction(result.data)
-                syncPolicyStore.markSynced(syncKeyCommunityTransactions(result.data.communityId))
-            }
+        if (result is Result.Success) {
+            localDataSource.upsertTransaction(result.data)
+            syncPolicyStore.markSynced(syncKeyCommunityTransactions(result.data.communityId))
         }
 
         return result
     }
+
+    override suspend fun resubmitTransaction(
+        transactionId: String,
+        type: String,
+        amount: Long,
+        description: String,
+        proofUrl: String?
+    ): Result<Transaction> {
+        val result = remoteDataSource.resubmitTransaction(
+            transactionId = transactionId,
+            type = type,
+            amount = amount,
+            description = description,
+            proofUrl = proofUrl,
+        )
+
+        if (result is Result.Success) {
+            localDataSource.upsertTransaction(result.data)
+            syncPolicyStore.markSynced(syncKeyCommunityTransactions(result.data.communityId))
+        }
+
+        return result
+    }
+
+    // ─── Remote-only (tidak perlu cache) ──────────────────────────────────────
+
+    override suspend fun uploadTransactionProof(
+        localUri: String,
+        userId: String,
+        communityId: String
+    ): Result<String> {
+        return remoteDataSource.uploadTransactionProof(
+            localUri = localUri,
+            userId = userId,
+            communityId = communityId,
+        )
+    }
+
+    // ─── Sync helpers ─────────────────────────────────────────────────────────
 
     private suspend fun refreshAllTransactions(force: Boolean) {
         refreshMutex.withLock {
@@ -112,17 +144,13 @@ class OfflineFirstTransactionRepository @Inject constructor(
             )
             if (!shouldSync) return
 
-            // ✅ DataSource return custom Result, handle eksplisit
             when (val result = remoteDataSource.fetchAllTransactions()) {
                 is Result.Success -> {
                     localDataSource.upsertTransactions(result.data)
                     syncPolicyStore.markSynced(SYNC_KEY_ALL_TRANSACTIONS)
                 }
-
                 is Result.Error -> {
-                    // Pilihan: log, rethrow, atau biarkan — tapi harus disadari
-                    Log.e("TransactionRepo", "Refresh failed", result.throwable)
-                    // Jangan markSynced kalau gagal
+                    Log.e("TransactionRepository", "Refresh all transactions failed", result.throwable)
                 }
             }
         }

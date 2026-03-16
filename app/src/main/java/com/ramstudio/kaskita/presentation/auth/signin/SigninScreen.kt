@@ -37,8 +37,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices.PIXEL_5
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.presentation.auth.register.LightGradient
 
 val BgColor = Color(0xFFFBFCFD)
@@ -109,7 +111,7 @@ fun SignInContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Email",
+                    text = stringResource(R.string.signin_email_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -122,7 +124,7 @@ fun SignInContent(
                     onValueChange = onEmailChange,
                     placeholder = {
                         Text(
-                            text = "john.doe@example.com",
+                            text = stringResource(R.string.signin_email_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -144,7 +146,7 @@ fun SignInContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Password",
+                    text = stringResource(R.string.signin_password_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -157,7 +159,7 @@ fun SignInContent(
                     onValueChange = onPasswordChange,
                     placeholder = {
                         Text(
-                            text = "Enter your password",
+                            text = stringResource(R.string.signin_password_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -198,7 +200,7 @@ fun SignInContent(
                     )
                 } else {
                     Text(
-                        text = "Sign in",
+                        text = stringResource(R.string.signin_button),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
@@ -217,7 +219,7 @@ fun SignInContent(
                                 color = TextGrey
                             )
                         ) {
-                            append("Don't have an account? ")
+                            append(stringResource(R.string.signin_no_account_prefix))
                         }
 
                         withStyle(
@@ -226,7 +228,7 @@ fun SignInContent(
                                 color = PrimaryGreen
                             )
                         ) {
-                            append("Sign Up")
+                            append(stringResource(R.string.signin_no_account_action))
                         }
                     }
                 )
@@ -238,14 +240,14 @@ fun SignInContent(
 @Composable
 fun SignInHeader() {
     Text(
-        text = "Welcome Back",
+        text = stringResource(R.string.signin_header_title),
         style = MaterialTheme.typography.headlineLarge,
         color = TextDark,
         fontWeight = FontWeight.ExtraBold
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Log in to manage your community cash flow and track notes securely",
+        text = stringResource(R.string.signin_header_subtitle),
         style = MaterialTheme.typography.bodyMedium,
         color = TextGrey,
         maxLines = 2,

@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.domain.model.User
 import com.ramstudio.kaskita.presentation.settings.CardBorder
 import com.ramstudio.kaskita.presentation.settings.PrimaryBlue
@@ -55,7 +57,7 @@ fun ProfileCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = user?.initial ?: "NA",
+                        text = user?.initial ?: stringResource(R.string.settings_profile_initials_unknown),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
@@ -66,13 +68,13 @@ fun ProfileCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = user?.name ?: "Unknown",
+                        text = user?.name ?: stringResource(R.string.settings_profile_unknown),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextMainBlack
                     )
                     Text(
-                        text = user?.email ?: "email not found",
+                        text = user?.email ?: stringResource(R.string.settings_profile_email_not_found),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSubGrey
                     )
@@ -82,7 +84,7 @@ fun ProfileCard(
                     onClick = onEditClick,
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("EDIT", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.settings_profile_edit), color = PrimaryBlue, fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -43,6 +43,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices.PIXEL_5
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramstudio.kaskita.R
@@ -118,7 +119,7 @@ fun SignUpContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Full Name",
+                    text = stringResource(R.string.signup_fullname_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -130,7 +131,7 @@ fun SignUpContent(
                     onValueChange = onFullNameChange,
                     placeholder = {
                         Text(
-                            text = "Ramada Aditya",
+                            text = stringResource(R.string.signup_fullname_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -150,7 +151,7 @@ fun SignUpContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Email",
+                    text = stringResource(R.string.signin_email_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -163,7 +164,7 @@ fun SignUpContent(
                     onValueChange = onEmailChange,
                     placeholder = {
                         Text(
-                            text = "john.doe@example.com",
+                            text = stringResource(R.string.signin_email_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -185,7 +186,7 @@ fun SignUpContent(
 
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
-                    text = "Password",
+                    text = stringResource(R.string.signup_password_label),
                     color = TextDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -198,7 +199,7 @@ fun SignUpContent(
                     onValueChange = onPasswordChange,
                     placeholder = {
                         Text(
-                            text = "Enter your password",
+                            text = stringResource(R.string.signin_password_placeholder),
                             color = TextGrey.copy(alpha = 0.7f)
                         )
                     },
@@ -239,7 +240,7 @@ fun SignUpContent(
                     )
                 } else {
                     Text(
-                        text = "Sign up",
+                        text = stringResource(R.string.signup_button),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
@@ -265,7 +266,7 @@ fun SignUpContent(
                                 color = TextGrey
                             )
                         ) {
-                            append("Already have an account? ")
+                            append(stringResource(R.string.signup_have_account_prefix))
                         }
 
                         withStyle(
@@ -274,7 +275,7 @@ fun SignUpContent(
                                 color = PrimaryGreen
                             )
                         ) {
-                            append("Log in")
+                            append(stringResource(R.string.signup_have_account_action))
                         }
                     }
                 )
@@ -286,7 +287,7 @@ fun SignUpContent(
 @Composable
 fun RegisterHeader() {
     Text(
-        text = "Create Account",
+        text = stringResource(R.string.signup_header_title),
         style = MaterialTheme.typography.headlineLarge,
         color = TextDark,
         fontWeight = FontWeight.ExtraBold,
@@ -294,7 +295,7 @@ fun RegisterHeader() {
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Join your community and start tracking you cash flow with ease",
+        text = stringResource(R.string.signup_header_subtitle),
         style = MaterialTheme.typography.bodyMedium,
         color = TextGrey,
         maxLines = 2,
@@ -318,13 +319,13 @@ fun GoogleSignInButton(onClick: () -> Unit) {
         // Pastikan Anda memiliki icon Google (ic_google) di res/drawable
         Image(
             painter = painterResource(R.drawable.ic_google),
-            contentDescription = "Google Sign In",
+            contentDescription = stringResource(R.string.signup_google_cd),
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
 
         Text(
-            text = "Sign in with Google",
+            text = stringResource(R.string.signup_google_button),
             fontWeight = FontWeight.Medium
         )
     }

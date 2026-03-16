@@ -50,11 +50,15 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -62,8 +66,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.SubcomposeAsyncImage
+import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.domain.model.TransactionCategory
 import com.ramstudio.kaskita.core.ui.theme.ErrorRed
 import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
@@ -75,12 +82,15 @@ fun AddTransactionScreen(
     onCloseClick: () -> Unit,
     onSuccess: () -> Unit,
     modifier: Modifier = Modifier,
+    editTransactionId: String? = null,
     isAdmin: Boolean = false,
     viewModel: AddTransactionViewModel = hiltViewModel()
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = LocalAppSnackbarHostState.current
+    val addSuccessMessage = stringResource(R.string.add_transaction_success)
+    val editSuccessMessage = stringResource(R.string.detail_transaction_edit_success)
     val receiptPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -88,9 +98,16 @@ fun AddTransactionScreen(
 
     }
 
+    LaunchedEffect(editTransactionId) {
+        if (!editTransactionId.isNullOrBlank()) {
+            viewModel.loadTransactionForEdit(editTransactionId)
+        }
+    }
+
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            snackbarHostState.showSnackbar("Transaksi berhasil dikirim, menunggu persetujuan admin")
+            val message = if (uiState.isEditMode) editSuccessMessage else addSuccessMessage
+            snackbarHostState.showSnackbar(message)
             viewModel.clearForm()
             onSuccess()
         }
@@ -105,17 +122,26 @@ fun AddTransactionScreen(
 
     AddTransactionContent(
         modifier = modifier,
+        isEditMode = uiState.isEditMode,
         transactionType = uiState.transactionType,
         amount = uiState.amount,
         description = uiState.description,
         hasReceiptAttached = uiState.hasReceipt,
+        receiptUri = uiState.receiptUri,
         onTypeChange = viewModel::onTypeChange,
         onAmountChange = viewModel::onAmountChange,
         onDescriptionChange = viewModel::onDescriptionChange,
-        onAttachReceipt = { receiptPickerLauncher.launch("image/**") },
+        onAttachReceipt = { receiptPickerLauncher.launch("image/*") },
         onCloseClick = onCloseClick,
-        onSubmitClick = { viewModel.submitTransaction(communityId, isAdmin) },
+        onSubmitClick = {
+            if (uiState.isEditMode) {
+                viewModel.submitEditedTransaction(communityId, isAdmin)
+            } else {
+                viewModel.submitTransaction(communityId, isAdmin)
+            }
+        },
         isLoading = uiState.isLoading,
+        isUploading = uiState.isUploading,
         isAdmin = isAdmin,
     )
 }
@@ -125,10 +151,12 @@ fun AddTransactionScreen(
 @Composable
 fun AddTransactionContent(
     modifier: Modifier = Modifier,
+    isEditMode: Boolean,
     transactionType: TransactionCategory,
     amount: String,
     description: String,
     hasReceiptAttached: Boolean,
+    receiptUri: String? = null,
     onTypeChange: (TransactionCategory) -> Unit,
     onAmountChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
@@ -136,6 +164,7 @@ fun AddTransactionContent(
     onCloseClick: () -> Unit,
     onSubmitClick: () -> Unit,
     isLoading: Boolean,
+    isUploading: Boolean,
     isAdmin: Boolean = false
 ) {
     val accentColor by animateColorAsState(
@@ -144,121 +173,182 @@ fun AddTransactionContent(
         label = "accentColor"
     )
 
+    var showImagePreview by remember { mutableStateOf(false) }
+
     val isFormValid = amount.isNotBlank() && amount.toDoubleOrNull() != null
             && description.isNotBlank()
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            CenterAlignedTopAppBar(
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "New Transaction",
+                        text = if (isEditMode) {
+                            stringResource(R.string.detail_transaction_edit_title)
+                        } else {
+                            stringResource(R.string.add_transaction_title)
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onCloseClick) {
-                        Icon(
-                            Icons.Rounded.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
-        bottomBar = {
-            SubmitBar(
-                accentColor = accentColor,
-                isEnabled = isFormValid && !isLoading,
-                onSubmitClick = onSubmitClick,
-                isLoading = isLoading
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TypeToggle(
-                selected = transactionType,
-                onSelect = onTypeChange,
-                accentColor = accentColor,
-                isAdmin = isAdmin
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            AmountInput(
-                amount = amount,
-                onAmountChange = onAmountChange,
-                accentColor = accentColor
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // ── Description ───────────────────────────────────────────────────
-            FormField(label = "DESCRIPTION") {
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = onDescriptionChange,
-                    placeholder = {
-                        Text(
-                            "What is this transaction for?",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    navigationIcon = {
+                        IconButton(onClick = onCloseClick) {
+                            Icon(
+                                Icons.Rounded.Close,
+                                contentDescription = stringResource(R.string.common_close),
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
                     },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        cursorColor = accentColor
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Receipt upload — REQUIRED for MVP ────────────────────────────
-            FormField(
-                label = "PROOF OF TRANSFER",
-                required = true
-            ) {
-                ReceiptUploadField(
-                    isAttached = hasReceiptAttached,
+            },
+            bottomBar = {
+                SubmitBar(
                     accentColor = accentColor,
-                    onClick = onAttachReceipt
+                    isEnabled = isFormValid && !isLoading && !isUploading,
+                    onSubmitClick = onSubmitClick,
+                    isLoading = isLoading,
+                    isEditMode = isEditMode
                 )
             }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+                TypeToggle(
+                    selected = transactionType,
+                    onSelect = onTypeChange,
+                    accentColor = accentColor,
+                    isAdmin = isAdmin
+                )
 
-            // ── Info note ─────────────────────────────────────────────────────
-            StatusInfoNote(
-                transactionType = transactionType,
-                accentColor = accentColor
-            )
+                Spacer(modifier = Modifier.height(40.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                AmountInput(
+                    amount = amount,
+                    onAmountChange = onAmountChange,
+                    accentColor = accentColor
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // ── Description ───────────────────────────────────────────────────
+                FormField(label = stringResource(R.string.add_transaction_desc_label)) {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = onDescriptionChange,
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.add_transaction_desc_placeholder),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = accentColor,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            cursorColor = accentColor
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Receipt upload ────────────────────────────────────────────
+                FormField(label = stringResource(R.string.add_transaction_proof_label), required = true) {
+                    ReceiptUploadField(
+                        isAttached = hasReceiptAttached,
+                        isUploading = isUploading,
+                        accentColor = accentColor,
+                        isEditMode = isEditMode,
+                        onClick = onAttachReceipt
+                    )
+                }
+
+                // ── Thumbnail preview setelah receipt dipilih ─────────────────
+                if (hasReceiptAttached && !receiptUri.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SubcomposeAsyncImage(
+                        model = receiptUri,
+                        contentDescription = stringResource(R.string.detail_transaction_evidence_cd),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { showImagePreview = true },
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // ── Info note ─────────────────────────────────────────────────
+                StatusInfoNote(transactionType = transactionType, accentColor = accentColor)
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        // ── Fullscreen image preview overlay ──────────────────────────────────
+        if (showImagePreview && !receiptUri.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.92f))
+                    .clickable { showImagePreview = false },
+                contentAlignment = Alignment.Center
+            ) {
+                SubcomposeAsyncImage(
+                    model = receiptUri,
+                    contentDescription = stringResource(R.string.detail_transaction_full_preview_cd),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    contentScale = ContentScale.Fit,
+                    loading = { CircularProgressIndicator(color = Color.White) }
+                )
+                IconButton(
+                    onClick = { showImagePreview = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 40.dp, end = 12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.detail_transaction_close_preview_cd),
+                        tint = Color.White
+                    )
+                }
+            }
         }
     }
 }
@@ -272,7 +362,7 @@ private fun TypeToggle(
     accentColor: Color,
     isAdmin: Boolean = false
 ) {
-    val visibleTypes = if (isAdmin) TransactionCategory.values().toList()
+    val visibleTypes = if (isAdmin) TransactionCategory.entries.toList()
     else listOf(TransactionCategory.INCOME)
 
     // If the current selection is EXPENSE but user is not admin, force INCOME
@@ -315,7 +405,13 @@ private fun TypeToggle(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = type.name,
+                        text = stringResource(
+                            if (type == TransactionCategory.INCOME) {
+                                R.string.transaction_type_income
+                            } else {
+                                R.string.transaction_type_expense
+                            }
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = textColor,
@@ -338,7 +434,7 @@ private fun AmountInput(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = "Rp",
+                text = stringResource(R.string.currency_rp),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -360,7 +456,7 @@ private fun AmountInput(
                     Box {
                         if (amount.isEmpty()) {
                             Text(
-                                text = "0",
+                                text = stringResource(R.string.add_transaction_amount_placeholder_zero),
                                 fontSize = 52.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
@@ -385,7 +481,7 @@ private fun AmountInput(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Enter amount",
+            text = stringResource(R.string.add_transaction_amount_hint),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 0.5.sp
@@ -413,7 +509,7 @@ private fun FormField(
             if (required) {
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "• required",
+                    text = stringResource(R.string.add_transaction_required),
                     style = MaterialTheme.typography.labelSmall,
                     color = ErrorRed,
                     fontSize = 10.sp
@@ -430,7 +526,9 @@ private fun FormField(
 @Composable
 private fun ReceiptUploadField(
     isAttached: Boolean,
+    isUploading: Boolean,
     accentColor: Color,
+    isEditMode: Boolean,
     onClick: () -> Unit
 ) {
     Row(
@@ -461,26 +559,43 @@ private fun ReceiptUploadField(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (isAttached) Icons.Rounded.CheckCircle else Icons.Rounded.AddPhotoAlternate,
-                contentDescription = null,
-                tint = if (isAttached) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp)
-            )
+            if (isUploading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = accentColor,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = if (isAttached) Icons.Rounded.CheckCircle else Icons.Rounded.AddPhotoAlternate,
+                    contentDescription = null,
+                    tint = if (isAttached) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isAttached) "Receipt attached" else "Upload receipt photo",
+                text = when {
+                    isUploading -> "Mengunggah bukti..."
+                    isAttached -> stringResource(R.string.add_transaction_receipt_attached)
+                    isEditMode -> stringResource(R.string.detail_transaction_edit_upload_receipt)
+                    else -> stringResource(R.string.add_transaction_upload_receipt)
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isAttached) accentColor
+                color = if (isAttached || isUploading) accentColor
                 else MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = if (isAttached) "Tap to change" else "JPG or PNG, max 5MB",
+                text = if (isAttached) {
+                    stringResource(R.string.add_transaction_tap_to_change)
+                } else {
+                    stringResource(R.string.add_transaction_receipt_format)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -521,11 +636,8 @@ private fun StatusInfoNote(
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = when (transactionType) {
-                TransactionCategory.INCOME ->
-                    "Your deposit will be submitted as PENDING and needs admin approval before the balance is updated."
-
-                TransactionCategory.EXPENSE ->
-                    "Withdrawals can only be submitted by admins. This will be recorded as PENDING until approved."
+                TransactionCategory.INCOME -> stringResource(R.string.add_transaction_info_income)
+                TransactionCategory.EXPENSE -> stringResource(R.string.add_transaction_info_expense)
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -541,7 +653,8 @@ private fun SubmitBar(
     accentColor: Color,
     isEnabled: Boolean,
     isLoading: Boolean,
-    onSubmitClick: () -> Unit
+    onSubmitClick: () -> Unit,
+    isEditMode: Boolean
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -577,7 +690,11 @@ private fun SubmitBar(
 
 
                     Text(
-                        text = "Submit Transaction",
+                        text = if (isEditMode) {
+                            stringResource(R.string.detail_transaction_edit_submit)
+                        } else {
+                            stringResource(R.string.add_transaction_submit)
+                        },
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.3.sp
                     )
@@ -593,7 +710,7 @@ private fun SubmitBar(
             if (!isEnabled && !isLoading) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Fill in amount, description, and attach a receipt to continue",
+                    text = stringResource(R.string.add_transaction_submit_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -611,6 +728,7 @@ private fun SubmitBar(
 fun AddTransactionScreenMemberPreview() {
     MaterialTheme {
         AddTransactionContent(
+            isEditMode = false,
             transactionType = TransactionCategory.INCOME,
             amount = "",
             description = "",
@@ -622,6 +740,7 @@ fun AddTransactionScreenMemberPreview() {
             onCloseClick = {},
             onSubmitClick = {},
             isLoading = false,
+            isUploading = false,
             isAdmin = false
         )
     }
@@ -632,6 +751,7 @@ fun AddTransactionScreenMemberPreview() {
 fun AddTransactionScreenAdminPreview() {
     MaterialTheme {
         AddTransactionContent(
+            isEditMode = false,
             transactionType = TransactionCategory.EXPENSE,
             amount = "40000",
             description = "Pembelian alat",
@@ -643,6 +763,7 @@ fun AddTransactionScreenAdminPreview() {
             onCloseClick = {},
             onSubmitClick = {},
             isLoading = false,
+            isUploading = false,
             isAdmin = true
         )
     }

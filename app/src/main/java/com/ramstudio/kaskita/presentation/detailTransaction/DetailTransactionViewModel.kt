@@ -1,5 +1,7 @@
 package com.ramstudio.kaskita.presentation.detailTransaction
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.common.Result
@@ -24,6 +26,7 @@ data class DetailTransactionUiState(
     val error: String? = null,
     val user: User? = null,
     val canManageTransaction: Boolean = false,
+    val canEditTransaction: Boolean = false,
     val selectedTransaction: TransactionUiModel? = null,
     val isActionLoading: Boolean = false,
     val actionSuccess: String? = null
@@ -51,6 +54,9 @@ class DetailTransactionViewModel @Inject constructor(
                 } else {
                     false
                 }
+                val canEditTransaction = transaction != null
+                    && transaction.status == TransactionStatus.REJECTED
+                    && currentUser?.id == transaction.userId
                 val transactionUiModel = transaction?.let { detail ->
                     val memberNameById = runCatching {
                         communityRepository.getMembersByCommunity(detail.communityId)
@@ -72,12 +78,14 @@ class DetailTransactionViewModel @Inject constructor(
                         selectedTransaction = transactionUiModel,
                         user = currentUser,
                         canManageTransaction = canManageTransaction,
+                        canEditTransaction = canEditTransaction,
                         isLoading = false
                     )
                 }
 
             } catch (e: Exception) {
                 _uiState.update {
+                    Log.e(TAG, "loadTransactionDetail: ${e.message}")
                     it.copy(
                         isLoading = false,
                         error = AppErrorMapper.fromThrowable(
@@ -94,8 +102,13 @@ class DetailTransactionViewModel @Inject constructor(
         performAdminAction(transactionId, TransactionStatus.SUCCESS, "Transaksi berhasil disetujui")
     }
 
-    fun rejectTransaction(transactionId: String) {
-        performAdminAction(transactionId, TransactionStatus.REJECTED, "Transaksi ditolak")
+    fun rejectTransaction(transactionId: String, rejectionReason: String) {
+        performAdminAction(
+            transactionId,
+            TransactionStatus.REJECTED,
+            "Transaksi ditolak",
+            rejectionReason
+        )
     }
 
     fun clearActionSuccess() {
@@ -110,7 +123,8 @@ class DetailTransactionViewModel @Inject constructor(
     private fun performAdminAction(
         transactionId: String,
         newStatus: TransactionStatus,
-        successMessage: String
+        successMessage: String,
+        rejectionReason: String? = null
     ) {
         viewModelScope.launch {
             val state = _uiState.value
@@ -132,7 +146,8 @@ class DetailTransactionViewModel @Inject constructor(
             val result = repository.updateTransaction(
                 transactionId = transactionId,
                 newStatus = newStatus,
-                approvedBy = currentUser?.id.orEmpty()
+                approvedBy = currentUser?.id.orEmpty(),
+                rejectionReason = rejectionReason
             )
 
             when (result) {
@@ -157,6 +172,8 @@ class DetailTransactionViewModel @Inject constructor(
                                 initiatorName = state.selectedTransaction?.initiatorName
                                     ?: result.data.userId
                             ),
+                            canEditTransaction = result.data.status == TransactionStatus.REJECTED
+                                && state.user?.id == result.data.userId
                         )
                     }
                 }

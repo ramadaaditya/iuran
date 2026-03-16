@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.ramstudio.kaskita.core.utils.formatDateTime
 import com.ramstudio.kaskita.core.utils.formatRupiahTransaction
 import com.ramstudio.kaskita.core.utils.formatTime
 import kotlinx.serialization.SerialName
@@ -14,7 +15,6 @@ import java.time.OffsetDateTime
 
 val PrimaryGreen = Color(0xFF2E7D32)
 val IconBgGreen = Color(0xFFC8E6C9)
-val IconBgYellow = Color(0xFFFFF9C4)
 
 data class Transaction(
     val id: String,
@@ -22,9 +22,11 @@ data class Transaction(
     val userId: String,
     val amount: Double,
     val description: String?,
+    val rejectionReason: String? = null,
     val createdAt: Long,
     val type: TransactionCategory,
-    val status: TransactionStatus
+    val status: TransactionStatus,
+    val proofUrl: String? = null,
 )
 
 enum class TransactionStatus {
@@ -37,6 +39,8 @@ enum class TransactionCategory {
 
 data class TransactionUiModel(
     val id: String,
+    val communityId: String,
+    val userId: String,
     val icon: ImageVector,
     val iconBgColor: Color,
     val title: String,
@@ -45,9 +49,12 @@ data class TransactionUiModel(
     val amountText: String,
     val isPositive: Boolean,
     val timeText: String,
+    val dateTimeText: String,
     val status: TransactionStatus,
     val category: TransactionCategory,
     val initiatorName: String = "",
+    val proofUrl: String? = null,
+    val rejectionReason: String? = null,
 )
 
 
@@ -61,17 +68,22 @@ fun Transaction.toUiModel(): TransactionUiModel {
 
     return TransactionUiModel(
         id = id,
+        communityId = communityId,
+        userId = userId,
         icon = icon,
-        iconBgColor = if (isPositive) IconBgGreen else IconBgYellow,
+        iconBgColor = if (isPositive) IconBgGreen else Color(0xFFFFCDD2),
         title = description ?: if (isPositive) "Pemasukan" else "Pengeluaran",
         subtitle = "Status: $status",
         amount = amount,
-        amountText = formatRupiahTransaction(amount),
+        amountText = formatRupiahTransaction(amount, isExpense = !isPositive),
         isPositive = isPositive,
         timeText = formatTime(createdAt),
+        dateTimeText = formatDateTime(createdAt),
         category = type,
         initiatorName = userId,
         status = status,
+        proofUrl = proofUrl,
+        rejectionReason = rejectionReason,
     )
 }
 
@@ -83,6 +95,7 @@ fun TransactionDto.toDomain(): Transaction {
             userId = userId,
             amount = amount.toDouble(),
             description = description,
+            rejectionReason = rejectionReason,
             createdAt = OffsetDateTime.parse(createdAt)
                 .toInstant()
                 .toEpochMilli(),
@@ -96,7 +109,8 @@ fun TransactionDto.toDomain(): Transaction {
                 "PENDING" -> TransactionStatus.PENDING
                 "REJECTED" -> TransactionStatus.REJECTED
                 else -> TransactionStatus.PENDING
-            }
+            },
+            proofUrl = proofUrl,
         )
     } else {
         TODO("VERSION.SDK_INT < O")
@@ -116,6 +130,8 @@ data class TransactionDto(
     val amount: Long,
     @SerialName("description")
     val description: String? = null,
+    @SerialName("rejection_reason")
+    val rejectionReason: String? = null,
     @SerialName("status")
     val status: String,
     @SerialName("proof_url")

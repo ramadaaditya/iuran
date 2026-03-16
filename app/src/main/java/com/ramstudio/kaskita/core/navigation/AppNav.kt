@@ -2,30 +2,29 @@ package com.ramstudio.kaskita.core.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.ramstudio.kaskita.AuthState
+import com.ramstudio.kaskita.core.ui.KasKitaState
 import com.ramstudio.kaskita.presentation.auth.register.SignUpScreen
 import com.ramstudio.kaskita.presentation.auth.signin.SignInScreen
 import com.ramstudio.kaskita.presentation.community.CommunityScreen
-import com.ramstudio.kaskita.presentation.dashboard.DashboardScreen
-import com.ramstudio.kaskita.presentation.dashboard.DashboardViewModel
+import com.ramstudio.kaskita.presentation.dashboard.DashboardRouteScreen
 import com.ramstudio.kaskita.presentation.detailCommunity.CommunityDetailScreen
 import com.ramstudio.kaskita.presentation.detailTransaction.TransactionDetailsScreen
 import com.ramstudio.kaskita.presentation.settings.SettingsScreen
 import com.ramstudio.kaskita.presentation.transaction.AddTransactionScreen
 import com.ramstudio.kaskita.presentation.transaction.TransactionScreen
-import com.ramstudio.kaskita.core.ui.KasKitaState
+import com.ramstudio.kaskita.presentation.transaction.navigateToTransactions
 
 @Composable
 fun AppNavHost(
     appState: KasKitaState,
     innerPadding: PaddingValues,
-    authState: AuthState
+    authState: AuthState,
+    selectedCommunityId: String?,
+    onSelectedCommunityChanged: (String?) -> Unit
 ) {
     val navController = appState.navController
 
@@ -39,19 +38,16 @@ fun AppNavHost(
                 startDestination = ScreenRoute.DashboardRoute
             ) {
                 composable<ScreenRoute.DashboardRoute> {
-                    DashboardScreen(
+                    DashboardRouteScreen(
                         innerPadding = innerPadding,
                         onTransactionClick = { id ->
                             navController.navigate(ScreenRoute.DetailTransaction(id))
                         },
-                        onAddTransactionClick = { communityId, isAdmin ->
-                            navController.navigate(
-                                ScreenRoute.AddTransactions(
-                                    communityId = communityId,
-                                    isAdmin = isAdmin
-                                )
-                            )
-                        }
+                        onViewAllTransactionsClick = {
+                            navController.navigateToTransactions()
+                        },
+                        selectedCommunityId = selectedCommunityId,
+                        onSelectedCommunityChanged = onSelectedCommunityChanged
                     )
 
                 }
@@ -64,23 +60,19 @@ fun AppNavHost(
                     )
                 }
                 composable<ScreenRoute.Transaction> {
-                    val dashboardViewModel: DashboardViewModel = hiltViewModel()
-                    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-
                     TransactionScreen(
                         innerPadding = innerPadding,
                         onDetailClick = { transactionId ->
                             navController.navigate(ScreenRoute.DetailTransaction(transactionId))
                         },
-                        isAdmin = dashboardUiState.isAdmin,
-                        communityId = dashboardUiState.selectedCommunity?.id ?: "",
-                        onAddTransactionClick = {
-                            val selectedCommunityId = dashboardUiState.selectedCommunity?.id.orEmpty()
-                            if (selectedCommunityId.isNotBlank()) {
+                        communityId = selectedCommunityId ?: "",
+                        onAddTransactionClick = { isAdmin ->
+                            val activeCommunityId = selectedCommunityId.orEmpty()
+                            if (activeCommunityId.isNotBlank()) {
                                 navController.navigate(
                                     ScreenRoute.AddTransactions(
-                                        communityId = selectedCommunityId,
-                                        isAdmin = dashboardUiState.isAdmin
+                                        communityId = activeCommunityId,
+                                        isAdmin = isAdmin
                                     )
                                 )
                             }
@@ -91,6 +83,15 @@ fun AppNavHost(
                     val route = backStackEntry.toRoute<ScreenRoute.DetailTransaction>()
                     TransactionDetailsScreen(
                         onBackClick = { navController.popBackStack() },
+                        onEditClick = { communityId, isAdmin, transactionId ->
+                            navController.navigate(
+                                ScreenRoute.AddTransactions(
+                                    communityId = communityId,
+                                    isAdmin = isAdmin,
+                                    editTransactionId = transactionId
+                                )
+                            )
+                        },
                         transactionId = route.transactionId
                     )
                 }
@@ -117,6 +118,7 @@ fun AppNavHost(
                     val route = backStackEntry.toRoute<ScreenRoute.AddTransactions>()
                     AddTransactionScreen(
                         communityId = route.communityId,
+                        editTransactionId = route.editTransactionId,
                         isAdmin = route.isAdmin,
                         onCloseClick = { navController.popBackStack() },
                         onSuccess = { navController.popBackStack() }

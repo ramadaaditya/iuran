@@ -24,6 +24,15 @@ interface TransactionRepository {
         transactionId: String,
         newStatus: TransactionStatus,
         approvedBy: String,
+        rejectionReason: String? = null,
+    ): Result<Transaction>
+
+    suspend fun resubmitTransaction(
+        transactionId: String,
+        type: String,
+        amount: Long,
+        description: String,
+        proofUrl: String?,
     ): Result<Transaction>
 
 

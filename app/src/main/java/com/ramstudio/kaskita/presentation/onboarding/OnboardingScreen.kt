@@ -46,18 +46,18 @@ private val pages = listOf(
     OnboardingPage(
         title = "",
         quote = "",
-        imageRes = R.drawable.business1
+        imageRes = R.drawable.faq
     ),
     OnboardingPage(
         title = "",
         quote = "",
-        imageRes = R.drawable.business2
+        imageRes = R.drawable.moneys
     ),
     OnboardingPage(
         title = "",
         quote = "",
-        imageRes = R.drawable.business3
-    )
+        imageRes = R.drawable.together
+    ),
 )
 
 @Composable
@@ -71,7 +71,7 @@ fun OnboardingScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(vertical = 30.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -109,7 +109,7 @@ fun OnboardingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(360.dp)
+                        .height(340.dp)
                         .clip(RoundedCornerShape(28.dp)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -120,14 +120,15 @@ fun OnboardingScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(36.dp))
+                Spacer(modifier = Modifier.height(64.dp))
 
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 20.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -137,7 +138,8 @@ fun OnboardingScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }
         }
@@ -169,7 +171,9 @@ fun OnboardingScreen(
                     scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
         ) {
             Text(
                 if (pagerState.currentPage == pages.lastIndex) {

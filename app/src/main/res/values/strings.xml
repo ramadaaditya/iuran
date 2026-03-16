@@ -48,12 +48,13 @@
     <string name="signup_google_cd">Masuk dengan Google</string>
     <string name="signup_google_button">Masuk dengan Google</string>
 
-    <string name="onboarding_title_1">Catat Setiap Rupiah</string>
-    <string name="onboarding_title_2">Kelola Bersama</string>
-    <string name="onboarding_title_3">Laporan Lebih Pasti</string>
-    <string name="onboarding_quote_1">Catatan kecil tiap hari membangun kas komunitas yang rapi dan transparan.</string>
-    <string name="onboarding_quote_2">Saat semua orang melihat angka yang sama, kepercayaan tumbuh alami.</string>
-    <string name="onboarding_quote_3">Ringkasan yang jelas membuat keputusan keuangan lebih tenang dan tepat.</string>
+    <string name="onboarding_title_1">Keuangan Bersama Membingungkan?</string>
+    <string name="onboarding_title_2">Catat Setiap Transaksi</string>
+    <string name="onboarding_title_3">Lebih Transparan</string>
+
+    <string name="onboarding_quote_1">Tanpa catatan yang jelas, uang masuk dan keluar mudah terlupa.</string>
+    <string name="onboarding_quote_2">Catat semua transaksi komunitas dalam satu tempat.</string>
+    <string name="onboarding_quote_3">Pantau keuangan bersama dengan lebih jelas dan transparan.</string>
 
     <string name="community_hero_title">Komunitas</string>
     <string name="community_active_groups">%1$d grup aktif</string>

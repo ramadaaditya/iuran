@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.common.Result
 import com.ramstudio.kaskita.core.domain.repository.AuthRepository
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
+import com.ramstudio.kaskita.core.utils.Validator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 
@@ -40,6 +42,23 @@ class SignInViewModel @Inject constructor(
     private val _uiEvent = Channel<SignInUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private fun validate(): Boolean {
+        val currentState = _uiState.value
+
+        val emailError = Validator.validateEmail(currentState.email)
+        val passwordError = Validator.validatePassword(currentState.password)
+
+        _uiState.update {
+            it.copy(
+                emailError = emailError,
+                passwordError = passwordError
+            )
+        }
+
+        return emailError == null && passwordError == null
+    }
+
+
     fun onEmailChange(newValue: String) {
         _uiState.update {
             it.copy(
@@ -58,18 +77,25 @@ class SignInViewModel @Inject constructor(
 
     fun signInWithEmail() {
         viewModelScope.launch {
+            if (!validate()) return@launch
             _uiState.update { it.copy(isLoading = true) }
             val result =
-                authRepository.signInWithEmail(_uiState.value.email, uiState.value.password)
+                authRepository.signInWithEmail(_uiState.value.email, _uiState.value.password)
             _uiState.update {
                 it.copy(isLoading = false)
             }
             when (result) {
                 is Result.Error -> {
+                    val errorMessage = result.throwable.message ?: "Unknown error"
+
+                    Timber.e(
+                        result.throwable,
+                        "SignInViewModel: signInWithEmail failed -> $errorMessage"
+                    )
                     _uiEvent.send(
                         SignInUiEvent.ShowSnackbar(
-                            AppErrorMapper.fromRawMessage(
-                                rawMessage = "Terjadi kesalahan",
+                            AppErrorMapper.fromThrowable(
+                                throwable = result.throwable,
                                 fallback = "Gagal masuk ke akun. Silakan coba lagi."
                             )
                         )

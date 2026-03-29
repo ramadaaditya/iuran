@@ -1,6 +1,5 @@
 package com.ramstudio.kaskita
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.data.datasource.local.DataStoreManager
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 sealed interface AuthState {
@@ -32,24 +32,25 @@ class MainViewModel @Inject constructor(
     private val _sessionStatus = MutableStateFlow<AuthState>(AuthState.Loading)
     val sessionStatus = _sessionStatus.asStateFlow()
 
-    private var activeUserId: String? = null
+    private val _activeUserId = MutableStateFlow<String?>(null)
+
     private var selectedCommunityObserverJob: Job? = null
 
     init {
-        checkSession()
+        observeSession()
     }
 
     fun setSelectedCommunityId(communityId: String?) {
         val normalized = communityId?.takeIf { it.isNotBlank() }
         _selectedCommunityId.value = normalized
 
-        val userId = activeUserId ?: return
+        val userId = _activeUserId.value ?: return
         viewModelScope.launch {
             datastore.saveSelectedCommunityId(userId = userId, communityId = normalized)
         }
     }
 
-    private fun observeLastCommunity(userId: String?) {
+    private fun reObserveSelectedCommunity(userId: String?) {
         selectedCommunityObserverJob?.cancel()
 
         if (userId.isNullOrBlank()) {
@@ -64,42 +65,55 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun checkSession() {
+    // ✅ Lebih simpel — tidak perlu Job, tidak perlu observe saat login
+//    private fun resetCommunityForUser(userId: String?) {
+//        _selectedCommunityId.value = null  // selalu reset, titik
+//
+//        // Opsional: bersihkan juga yang tersimpan di datastore
+//        if (userId != null) {
+//            viewModelScope.launch {
+//                datastore.saveSelectedCommunityId(userId, communityId = null)
+//            }
+//        }
+//    }
+
+    private fun observeSession() {
         viewModelScope.launch {
-            repository.sessionStatus.collectLatest { status ->
+            repository.sessionStatus.collect { status ->
                 when (status) {
                     is SessionStatus.Authenticated -> {
                         val user = status.session.user
-                        activeUserId = user?.id
-                        _sessionStatus.value = AuthState.LoggedIn
-                        observeLastCommunity(user?.id)
-
-                        Log.d(
-                            "AUTH_VM",
-                            "Authenticated ✅ userId=${user?.id}, email=${user?.email}"
+                        _activeUserId.value = user?.id
+                        _sessionStatus.value = mapToAuthState(status)
+                        reObserveSelectedCommunity(user?.id)
+                        Timber.d(
+                            "AUTH_VM : Authenticated ✅ userId=${user?.id}, email=${user?.email}"
                         )
                     }
 
-                    is SessionStatus.NotAuthenticated -> {
-                        activeUserId = null
-                        _sessionStatus.value = AuthState.LoggedOut
-                        observeLastCommunity(null)
-                        Log.d("AUTH_VM", "Not authenticated ❌")
+                    is SessionStatus.Initializing -> {
+                        _sessionStatus.value = mapToAuthState(status)
+                        Timber.d("AUTH_VM : Auth loading ⏳")
                     }
 
-                    SessionStatus.Initializing -> {
-                        _sessionStatus.value = AuthState.Loading
-                        Log.d("AUTH_VM", "Auth loading ⏳")
-                    }
-
+                    is SessionStatus.NotAuthenticated,
                     is SessionStatus.RefreshFailure -> {
-                        activeUserId = null
-                        _sessionStatus.value = AuthState.LoggedOut
-                        observeLastCommunity(null)
-                        Log.d("AUTH_VM", "Session expired ❗")
+                        _activeUserId.value = null
+                        _sessionStatus.value = mapToAuthState(status)
+                        reObserveSelectedCommunity(null)
+                        Timber.d("AUTH_VM : Session expired ❗")
                     }
                 }
             }
+        }
+    }
+
+    private fun mapToAuthState(session: SessionStatus): AuthState {
+        return when (session) {
+            is SessionStatus.Authenticated -> AuthState.LoggedIn
+            is SessionStatus.NotAuthenticated -> AuthState.LoggedOut
+            is SessionStatus.Initializing -> AuthState.Loading
+            is SessionStatus.RefreshFailure -> AuthState.LoggedOut
         }
     }
 }

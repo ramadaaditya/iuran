@@ -105,8 +105,8 @@ dependencies {
 
     implementation(libs.androidx.core.splashscreen)
 
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
+//    implementation(platform(libs.firebase.bom))
+//    implementation(libs.firebase.analytics)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
@@ -115,5 +115,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.timber)
 
 }

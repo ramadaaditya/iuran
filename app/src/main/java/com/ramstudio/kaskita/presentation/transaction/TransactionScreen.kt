@@ -150,11 +150,6 @@ fun TransactionContent(
             .padding(innerPadding),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        item {
-            TransactionHeader(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp)
-            )
-        }
 
         if (!hasSelectedCommunity) {
             item {

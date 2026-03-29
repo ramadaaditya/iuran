@@ -46,7 +46,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,7 +63,6 @@ import com.ramstudio.kaskita.core.ui.theme.Border
 import com.ramstudio.kaskita.core.ui.theme.DividerColor
 import com.ramstudio.kaskita.core.ui.theme.ErrorRed
 import com.ramstudio.kaskita.core.ui.theme.InfoBlue
-import com.ramstudio.kaskita.core.ui.theme.KasKitaTheme
 import com.ramstudio.kaskita.core.ui.theme.Primary
 import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.core.ui.theme.TextDisabled
@@ -211,23 +209,23 @@ fun NavController.navigateToDashboard(navOptions: NavOptions? = null) =
     }
 
 
-val previewDashboardUiState = DashboardUiState(
-    communities = dummyCommunities,
-    selectedCommunity = dummyCommunities.first(),
-    transactions = dummyTransactions,
-    isLoading = false,
-    totalIncome = 150000.0,
-    totalExpense = 175000.0,
-    pendingCount = 1,
-    isAdmin = true,
-    currentUserId = "user-admin-1"
-)
+//val previewDashboardUiState = DashboardUiState(
+//    communities = dummyCommunities,
+//    selectedCommunity = dummyCommunities.first(),
+//    transactions = dummyTransactions,
+//    isLoading = false,
+//    totalIncome = 150000.0,
+//    totalExpense = 175000.0,
+//    pendingCount = 1,
+//    isAdmin = true,
+//    currentUserId = "user-admin-1"
+//)
 
-val previewEmptyUiState = DashboardUiState(
-    communities = emptyList(),
-    selectedCommunity = null,
-    isLoading = false
-)
+//val previewEmptyUiState = DashboardUiState(
+//    communities = emptyList(),
+//    selectedCommunity = null,
+//    isLoading = false
+//)
 
 @Composable
 fun DashboardRouteScreen(
@@ -245,8 +243,9 @@ fun DashboardRouteScreen(
         viewModel.setSelectedCommunityId(selectedCommunityId)
     }
 
-    LaunchedEffect(uiState.selectedCommunity?.id) {
-        val activeId = uiState.selectedCommunity?.id
+    val activeId = (uiState.screenState as? DashboardScreenState.Success)?.selectedCommunity?.id
+
+    LaunchedEffect(activeId) {
         if (activeId != selectedCommunityId) {
             onSelectedCommunityChanged(activeId)
         }
@@ -275,30 +274,32 @@ private fun DashboardContent(
     onViewAllTransactionsClick: () -> Unit,
     onPendingApprovalsClick: () -> Unit
 ) {
-    when {
-        uiState.isLoading -> DashboardLoadingState(modifier)
-        uiState.selectedCommunity == null -> DashboardEmptyState(modifier)
-        else -> DashboardMainContent(
-            uiState = uiState,
+    when (val state = uiState.screenState) {
+        is DashboardScreenState.Loading -> DashboardLoadingState(modifier)
+        is DashboardScreenState.Empty -> DashboardEmptyState(modifier)
+        is DashboardScreenState.Error -> DashboardEmptyState()// ini perlu disesuaikan lagi
+        is DashboardScreenState.Success -> DashboardMainContent(
+            uiState = state,
             modifier = modifier,
             onCommunitySelected = onCommunitySelected,
             onTransactionClick = onTransactionClick,
             onViewAllTransactionsClick = onViewAllTransactionsClick,
-            onPendingApprovalsClick = onPendingApprovalsClick
+            onPendingApprovalsClick = onPendingApprovalsClick,
+            isAdmin = uiState.isAdmin
         )
     }
 }
 
 @Composable
 private fun DashboardMainContent(
-    uiState: DashboardUiState,
+    uiState: DashboardScreenState.Success,
+    isAdmin: Boolean,
     modifier: Modifier = Modifier,
     onCommunitySelected: (Community) -> Unit,
     onTransactionClick: (String) -> Unit,
     onViewAllTransactionsClick: () -> Unit,
     onPendingApprovalsClick: () -> Unit
 ) {
-    val community = uiState.selectedCommunity ?: return
     val recentTransactions = uiState.transactions.take(5)
 
     LazyColumn(
@@ -307,16 +308,16 @@ private fun DashboardMainContent(
     ) {
         item {
             DashboardHeader(
-                community = community,
+                community = uiState.selectedCommunity,
                 communities = uiState.communities,
-                isAdmin = uiState.isAdmin,
+                isAdmin = isAdmin,
                 totalIncome = uiState.totalIncome,
                 totalExpense = uiState.totalExpense,
                 onCommunitySelected = onCommunitySelected
             )
         }
 
-        if (uiState.isAdmin && uiState.pendingCount > 0) {
+        if (isAdmin && uiState.pendingCount > 0) {
             item {
                 PendingApprovalsBanner(
                     pendingCount = uiState.pendingCount,
@@ -376,7 +377,6 @@ private fun DashboardHeader(
             .padding(top = 24.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Community Selector
         CommunitySelector(
             selectedCommunity = community,
             communities = communities,
@@ -386,7 +386,6 @@ private fun DashboardHeader(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Balance
         Text(
             text = stringResource(R.string.dashboard_total_balance),
             fontSize = 11.sp,
@@ -405,7 +404,6 @@ private fun DashboardHeader(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Income & Expense Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -441,7 +439,6 @@ private fun CommunitySelector(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box {
-            // Selector pill
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
@@ -451,7 +448,6 @@ private fun CommunitySelector(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Community color dot
                 Box(
                     modifier = Modifier
                         .size(8.dp)
@@ -477,7 +473,6 @@ private fun CommunitySelector(
                 }
             }
 
-            // Dropdown
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
@@ -512,7 +507,6 @@ private fun CommunitySelector(
             }
         }
 
-        // Admin Badge — only shown when user is admin
         if (isAdmin) {
             Box(
                 modifier = Modifier
@@ -572,10 +566,6 @@ private fun SummaryCard(
         )
     }
 }
-
-// ---------------------------------------------------------------------------
-// Pending Approvals Banner
-// ---------------------------------------------------------------------------
 
 @Composable
 private fun PendingApprovalsBanner(
@@ -713,7 +703,7 @@ private fun DashboardEmptyState(modifier: Modifier = Modifier) {
             tint = TextMedium,
             modifier = Modifier.size(64.dp)
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.dashboard_empty_community_title),
             style = MaterialTheme.typography.titleMedium,
@@ -759,10 +749,6 @@ private fun EmptyTransactionState(modifier: Modifier = Modifier) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 fun formatCurrency(amount: Double): String {
     val formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"))
     formatter.maximumFractionDigits = 0
@@ -770,61 +756,61 @@ fun formatCurrency(amount: Double): String {
 }
 
 
-@Preview(showBackground = true, name = "Dashboard - Normal (Admin)")
-@Composable
-private fun DashboardPreviewAdmin() {
-    KasKitaTheme {
-        DashboardContent(
-            uiState = previewDashboardUiState,
-            onCommunitySelected = {},
-            onTransactionClick = {},
-            onViewAllTransactionsClick = {},
-            onPendingApprovalsClick = {}
-        )
-    }
-}
+//@Preview(showBackground = true, name = "Dashboard - Normal (Admin)")
+//@Composable
+//private fun DashboardPreviewAdmin() {
+//    KasKitaTheme {
+//        DashboardContent(
+//            uiState = previewDashboardUiState,
+//            onCommunitySelected = {},
+//            onTransactionClick = {},
+//            onViewAllTransactionsClick = {},
+//            onPendingApprovalsClick = {}
+//        )
+//    }
+//}
 
-@Preview(showBackground = true, name = "Dashboard - Normal (Member)")
-@Composable
-private fun DashboardPreviewMember() {
-    KasKitaTheme {
-        DashboardContent(
-            uiState = previewDashboardUiState.copy(
-                isAdmin = false,
-                pendingCount = 0
-            ),
-            onCommunitySelected = {},
-            onTransactionClick = {},
-            onViewAllTransactionsClick = {},
-            onPendingApprovalsClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Dashboard - Empty (No Community)")
-@Composable
-private fun DashboardPreviewEmpty() {
-    KasKitaTheme {
-        DashboardContent(
-            uiState = previewEmptyUiState,
-            onCommunitySelected = {},
-            onTransactionClick = {},
-            onViewAllTransactionsClick = {},
-            onPendingApprovalsClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Dashboard - Loading")
-@Composable
-private fun DashboardPreviewLoading() {
-    KasKitaTheme {
-        DashboardContent(
-            uiState = previewDashboardUiState.copy(isLoading = true),
-            onCommunitySelected = {},
-            onTransactionClick = {},
-            onViewAllTransactionsClick = {},
-            onPendingApprovalsClick = {}
-        )
-    }
-}
+//@Preview(showBackground = true, name = "Dashboard - Normal (Member)")
+//@Composable
+//private fun DashboardPreviewMember() {
+//    KasKitaTheme {
+//        DashboardContent(
+//            uiState = previewDashboardUiState.copy(
+//                isAdmin = false,
+//                pendingCount = 0
+//            ),
+//            onCommunitySelected = {},
+//            onTransactionClick = {},
+//            onViewAllTransactionsClick = {},
+//            onPendingApprovalsClick = {}
+//        )
+//    }
+//}
+//
+//@Preview(showBackground = true, name = "Dashboard - Empty (No Community)")
+//@Composable
+//private fun DashboardPreviewEmpty() {
+//    KasKitaTheme {
+//        DashboardContent(
+//            uiState = previewEmptyUiState,
+//            onCommunitySelected = {},
+//            onTransactionClick = {},
+//            onViewAllTransactionsClick = {},
+//            onPendingApprovalsClick = {}
+//        )
+//    }
+//}
+//
+//@Preview(showBackground = true, name = "Dashboard - Loading")
+//@Composable
+//private fun DashboardPreviewLoading() {
+//    KasKitaTheme {
+//        DashboardContent(
+//            uiState = previewDashboardUiState.copy(isLoading = true),
+//            onCommunitySelected = {},
+//            onTransactionClick = {},
+//            onViewAllTransactionsClick = {},
+//            onPendingApprovalsClick = {}
+//        )
+//    }
+//}

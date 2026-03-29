@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ramstudio.kaskita.core.common.Result
 import com.ramstudio.kaskita.core.domain.repository.AuthRepository
 import com.ramstudio.kaskita.core.utils.AppErrorMapper
+import com.ramstudio.kaskita.core.utils.Validator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,22 @@ sealed interface SignUpUiEvent {
 class SignUpViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
+    private fun validate(): Boolean {
+        val currentState = _uiState.value
+        val emailError = Validator.validateEmail(currentState.email)
+        val passwordError = Validator.validatePassword(currentState.password)
+        val fullNameError = Validator.validateFullName(currentState.fullName)
+
+        _uiState.update {
+            it.copy(
+                emailError = emailError,
+                passwordError = passwordError,
+                fullNameError = fullNameError,
+            )
+        }
+
+        return emailError == null && passwordError == null && fullNameError == null
+    }
 
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState = _uiState.asStateFlow()
@@ -56,6 +73,7 @@ class SignUpViewModel @Inject constructor(
 
     fun signUpWithEmail() {
         viewModelScope.launch {
+            if (!validate()) return@launch
             _uiState.update { it.copy(isLoading = true) }
             val result = authRepository.signUp(
                 email = uiState.value.email,
@@ -72,8 +90,8 @@ class SignUpViewModel @Inject constructor(
                 is Result.Error -> {
                     _uiEvent.send(
                         SignUpUiEvent.ShowSnackbar(
-                            AppErrorMapper.fromRawMessage(
-                                rawMessage = "Terjadi kesalahan",
+                            AppErrorMapper.fromThrowable(
+                                throwable = result.throwable,
                                 fallback = "Gagal membuat akun. Silakan coba lagi."
                             )
                         )

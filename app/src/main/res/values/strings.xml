@@ -41,7 +41,7 @@
     <string name="signup_fullname_placeholder">Nama Anda</string>
     <string name="signup_password_label">Kata Sandi</string>
     <string name="signup_button">Daftar</string>
-    <string name="signup_have_account_prefix">Sudah punya akun?  </string>
+    <string name="signup_have_account_prefix">Sudah punya akun ?  </string>
     <string name="signup_have_account_action">Masuk</string>
     <string name="signup_header_title">Buat Akun</string>
     <string name="signup_header_subtitle">Gabung ke komunitas dan mulai catat kas dengan mudah.</string>
@@ -60,6 +60,7 @@
     <string name="community_active_groups">%1$d grup aktif</string>
     <string name="community_section_managed">Komunitas yang Anda Kelola</string>
     <string name="community_empty_managed">Anda belum membuat komunitas.</string>
+    <string name="community_empty">Gabung atau buat komunitas anda.</string>
     <string name="community_section_joined">Komunitas yang Diikuti</string>
     <string name="community_empty_joined">Gabung ke komunitas dengan kode undangan.</string>
     <string name="community_create_title">Buat Komunitas</string>
@@ -81,7 +82,7 @@
     <string name="dashboard_pending_tap_review">Ketuk untuk meninjau</string>
     <string name="dashboard_history_title">Riwayat Transaksi</string>
     <string name="dashboard_empty_community_title">Belum ada komunitas</string>
-    <string name="dashboard_empty_community_subtitle">Buat atau bergabung ke komunitas di tab Komunitas</string>
+    <string name="dashboard_empty_community_subtitle">Buat atau bergabung untuk memulai</string>
     <string name="dashboard_empty_transaction_title">Belum ada transaksi</string>
     <string name="dashboard_empty_transaction_subtitle">Transaksi komunitas akan muncul di sini</string>
 

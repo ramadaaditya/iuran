@@ -12,6 +12,7 @@ import com.ramstudio.kaskita.presentation.auth.signin.SignInScreen
 import com.ramstudio.kaskita.presentation.community.CommunityScreen
 import com.ramstudio.kaskita.presentation.dashboard.DashboardRouteScreen
 import com.ramstudio.kaskita.presentation.detailCommunity.CommunityDetailScreen
+import com.ramstudio.kaskita.presentation.detailCommunity.navigateToDetailCommunity
 import com.ramstudio.kaskita.presentation.detailTransaction.TransactionDetailsScreen
 import com.ramstudio.kaskita.presentation.settings.SettingsScreen
 import com.ramstudio.kaskita.presentation.transaction.AddTransactionScreen
@@ -55,7 +56,7 @@ fun AppNavHost(
                     CommunityScreen(
                         innerPadding = innerPadding,
                         onDetailClick = { communityId ->
-                            navController.navigate(ScreenRoute.DetailCommunity(communityId))
+                            navController.navigateToDetailCommunity(communityId)
                         }
                     )
                 }

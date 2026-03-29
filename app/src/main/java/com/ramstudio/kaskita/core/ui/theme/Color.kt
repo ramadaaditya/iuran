@@ -17,6 +17,7 @@ val Border = Color(0xFFCACACA)
 val DividerColor = Color(0xFFE0E0E0)
 
 val White = Color(0xFFFFFFFF)
+val ContentWhite = Color(0xFFFAFAFF)
 
 // ================= SEMANTIC =================
 val ErrorRed = Color(0xFFFF4267)

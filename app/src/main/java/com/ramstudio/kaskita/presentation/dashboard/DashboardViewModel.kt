@@ -25,17 +25,27 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
+sealed interface DashboardScreenState {
+
+    data object Loading : DashboardScreenState
+    data object Empty : DashboardScreenState
+    data class Error(val message: String) : DashboardScreenState
+    data class Success(
+        val communities: List<Community> = emptyList(),
+        val selectedCommunity: Community,
+        val transactions: List<TransactionUiModel> = emptyList(),
+        val totalIncome: Double = 0.0,
+        val totalExpense: Double = 0.0,
+        val pendingCount: Int = 0,
+    ) : DashboardScreenState
+}
+
+
 data class DashboardUiState(
-    val communities: List<Community> = emptyList(),
-    val selectedCommunity: Community? = null,
-    val transactions: List<TransactionUiModel> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val totalIncome: Double = 0.0,
-    val totalExpense: Double = 0.0,
-    val pendingCount: Int = 0,
+    val screenState: DashboardScreenState = DashboardScreenState.Loading,
     val isAdmin: Boolean = false,
-    val currentUserId: String? = null
+    val currentUserId: String? = null,
+    val selectedCommunityId: String? = null,
 )
 
 @HiltViewModel
@@ -64,7 +74,6 @@ class DashboardViewModel @Inject constructor(
             else trxRepository.getTransactionsByCommunity(communityId)
         }
 
-    // Resolve nama member per community yang aktif
     @OptIn(ExperimentalCoroutinesApi::class)
     private val memberMapFlow: Flow<Map<String, String>> = _selectedCommunityId
         .flatMapLatest { communityId ->
@@ -89,44 +98,52 @@ class DashboardViewModel @Inject constructor(
             val activeCommunity = community.find { it.id == communityId }
                 ?: community.firstOrNull()
 
-            // Keep internal selected id valid and stable against remote list changes.
             if (activeCommunity?.id != communityId) {
                 _selectedCommunityId.value = activeCommunity?.id
             }
 
             val isAdmin = activeCommunity?.createdBy != null &&
-                activeCommunity.createdBy == user?.id
+                    activeCommunity.createdBy == user?.id
 
-            val uiModel = transactions.map { t ->
-                val fullName = when {
-                    memberMap[t.userId]?.isNotBlank() == true -> memberMap[t.userId]!!
-                    user != null && t.userId == user.id -> user.name
-                    else -> "Community Member"
+
+            val screenState: DashboardScreenState = if (activeCommunity == null) {
+                DashboardScreenState.Empty
+            } else {
+
+                val uiModel = transactions.map { t ->
+                    val fullName = when {
+                        memberMap[t.userId]?.isNotBlank() == true -> memberMap[t.userId]!!
+                        user != null && t.userId == user.id -> user.name
+                        else -> "Community Member"
+                    }
+                    t.toUiModel().copy(
+                        initiatorName = fullName,
+                        subtitle = fullName,
+                    )
+
                 }
-                t.toUiModel().copy(
-                    initiatorName = fullName,
-                    subtitle = fullName,
+
+                val pendingCount = uiModel.count { it.status == TransactionStatus.PENDING }
+                val totalIncome = transactions.filter {
+                    it.type == TransactionCategory.INCOME && it.status == TransactionStatus.SUCCESS
+                }.sumOf { it.amount }
+
+                val totalExpense = transactions.filter {
+                    it.type == TransactionCategory.EXPENSE && it.status == TransactionStatus.SUCCESS
+                }.sumOf { it.amount }
+
+                DashboardScreenState.Success(
+                    communities = community,
+                    selectedCommunity = activeCommunity,
+                    transactions = uiModel,
+                    totalIncome = totalIncome,
+                    totalExpense = totalExpense,
+                    pendingCount = pendingCount,
                 )
             }
 
-            val pendingCount = uiModel.count { it.status == TransactionStatus.PENDING }
-            val totalIncome = transactions.filter {
-                it.type == TransactionCategory.INCOME && it.status == TransactionStatus.SUCCESS
-            }.sumOf { it.amount }
-
-            val totalExpense = transactions.filter {
-                it.type == TransactionCategory.EXPENSE && it.status == TransactionStatus.SUCCESS
-            }.sumOf { it.amount }
-
             DashboardUiState(
-                communities = community,
-                selectedCommunity = activeCommunity,
-                transactions = uiModel,
-                isLoading = false,
-                error = null,
-                totalIncome = totalIncome,
-                totalExpense = totalExpense,
-                pendingCount = pendingCount,
+                screenState = screenState,
                 isAdmin = isAdmin,
                 currentUserId = user?.id
             )
@@ -135,6 +152,7 @@ class DashboardViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = DashboardUiState()
         )
+
 
     fun setSelectedCommunityId(communityId: String?) {
         _selectedCommunityId.value = communityId?.takeIf { it.isNotBlank() }

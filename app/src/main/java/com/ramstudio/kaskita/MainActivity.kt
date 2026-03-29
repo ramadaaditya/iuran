@@ -27,7 +27,8 @@ class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen().setKeepOnScreenCondition {
+        installSplashScreen()
+            .setKeepOnScreenCondition {
             mainViewModel.sessionStatus.value is AuthState.Loading
         }
         super.onCreate(savedInstanceState)

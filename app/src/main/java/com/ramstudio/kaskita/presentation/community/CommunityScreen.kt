@@ -26,6 +26,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.rounded.Celebration
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
@@ -40,6 +42,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -61,8 +64,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.ramstudio.kaskita.R
+import com.ramstudio.kaskita.core.common.UiState
 import com.ramstudio.kaskita.core.domain.model.Community
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
+import com.ramstudio.kaskita.core.ui.component.EmptyStateAction
+import com.ramstudio.kaskita.core.ui.component.EmptyStateView
 import com.ramstudio.kaskita.presentation.dashboard.component.CreateCommunityDialog
 import com.ramstudio.kaskita.presentation.dashboard.component.JoinCommunityDialog
 
@@ -85,10 +91,23 @@ fun CommunityScreen(
     var showJoinDialog by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showActionFab by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    val currentUserId = uiState.currentUserId
-    val managedCommunities = uiState.communities.filter { it.createdBy == currentUserId }
-    val joinedCommunities = uiState.communities.filter { it.createdBy != currentUserId }
+//    LaunchedEffect(Unit) {
+//        viewModel.uiEvent.collect { event ->
+//            when (event) {
+//                is CommunityEvent.ShowError -> {
+//                    snackbarHostState.showSnackbar(event.message)
+//                }
+//
+//                is CommunityEvent.ShowSuccess -> {
+//                    showCreateDialog = false
+//                    showJoinDialog = false
+//                    snackbarHostState.showSnackbar(event.message)
+//                }
+//            }
+//        }
+//    }
 
     Box(
         modifier = Modifier
@@ -96,8 +115,7 @@ fun CommunityScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         CommunityContent(
-            managedCommunities = managedCommunities,
-            joinedCommunities = joinedCommunities,
+            uiState = uiState,
             innerPadding = innerPadding,
             onDetailClick = onDetailClick
         )
@@ -120,28 +138,19 @@ fun CommunityScreen(
 
         if (showCreateDialog) {
             CreateCommunityDialog(
-                isLoading = uiState.isLoading,
-                errorMessage = uiState.errorMessage,
-                successMessage = uiState.successMessage,
                 onDismiss = {
                     showCreateDialog = false
-                    viewModel.clearMessages()
                 },
+                isLoading = uiState.isActionLoading,
                 onCreate = { name, desc -> viewModel.createCommunity(name, desc) },
-                onSuccessHandled = {
-                    showCreateDialog = false
-                    viewModel.clearMessages()
-                }
             )
         }
 
         if (showJoinDialog) {
             JoinCommunityDialog(
-                isLoading = uiState.isLoading,
-                errorMessage = uiState.errorMessage,
+                isLoading = uiState.isActionLoading,
                 onDismiss = {
                     showJoinDialog = false
-                    viewModel.clearMessages()
                 },
                 onJoin = { code -> viewModel.joinCommunity(code) }
             )
@@ -150,74 +159,60 @@ fun CommunityScreen(
 }
 
 @Composable
-private fun CommunityHeader(
-    totalCommunities: Int,
-    modifier: Modifier = Modifier
+fun CommunityContent(
+    modifier: Modifier = Modifier,
+    uiState: CommunityUiState,
+    innerPadding: PaddingValues,
+    onDetailClick: (communityId: String) -> Unit
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Komunitas",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold
+    when (val screenState = uiState.screenState) {
+        is UiState.Loading -> {}// BUat loading screen nya
+        is UiState.Error -> EmptyStateView(
+            icon = Icons.Default.CloudOff,
+            iconTint = MaterialTheme.colorScheme.error,
+            title = "Gagal Memuat Komunitas",
+            subtitle = screenState.message,
+            modifier = modifier,
+            action = EmptyStateAction(
+                label = "Coba Lagi",
+                onClick = {} // TODO: expose retry dari ViewModel
+            )
         )
-        Text(
-            text = stringResource(R.string.community_active_groups, totalCommunities),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Black.copy(alpha = 0.8f)
+
+        is UiState.Success -> CommunityMainContent(
+            communities = screenState.data,
+            innerPadding = innerPadding,
+            onDetailClick = onDetailClick,
+            modifier = modifier
         )
     }
 }
 
 @Composable
-private fun CommunityContent(
-    managedCommunities: List<Community>,
-    joinedCommunities: List<Community>,
+private fun CommunityMainContent(
+    communities: List<Community>,
     innerPadding: PaddingValues,
-    onDetailClick: (communityId: String) -> Unit
+    onDetailClick: (communityId: String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val totalCommunities = managedCommunities.size + joinedCommunities.size
-
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(innerPadding),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
-        item {
-            CommunityHeader(
-                totalCommunities = totalCommunities
-            )
-        }
-
-        item {
-            SectionTitle(stringResource(R.string.community_section_managed))
-        }
-
-        if (managedCommunities.isEmpty()) {
+        if (communities.isEmpty()) {
             item {
-                EmptySectionCard(stringResource(R.string.community_empty_managed))
-            }
-        } else {
-            items(managedCommunities, key = { it.id ?: it.code }) { community ->
-                CommunityCard(
-                    community = community,
-                    onClick = { community.id?.let(onDetailClick) }
+                EmptyStateView(
+                    icon = Icons.Default.GroupAdd,
+                    title = stringResource(R.string.community_empty),
+                    subtitle = "Buat atau bergabung ke komunitas untuk memulai",
+                    modifier = Modifier.fillParentMaxSize()
                 )
             }
-        }
-
-        item {
-            SectionTitle(stringResource(R.string.community_section_joined))
-        }
-
-        if (joinedCommunities.isEmpty()) {
-            item {
-                EmptySectionCard(stringResource(R.string.community_empty_joined))
-            }
         } else {
-            items(joinedCommunities, key = { it.id ?: it.code }) { community ->
+            items(communities, key = { it.id ?: it.code }) { community ->
                 CommunityCard(
                     community = community,
                     onClick = { community.id?.let(onDetailClick) }
@@ -374,15 +369,6 @@ private fun CommunityCard(
     }
 }
 
-@Composable
-private fun SectionTitle(label: String) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-}
 
 @Composable
 private fun EmptySectionCard(message: String) {

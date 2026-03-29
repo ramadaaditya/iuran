@@ -1,9 +1,11 @@
 package com.ramstudio.kaskita.core.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -37,7 +39,8 @@ data class ExtendedColors(
     val success: Color,
     val info: Color,
     val warning: Color,
-    val alert: Color
+    val alert: Color,
+    val contentBackground: Color
 )
 
 val LocalExtendedColors = staticCompositionLocalOf {
@@ -45,7 +48,8 @@ val LocalExtendedColors = staticCompositionLocalOf {
         success = SuccessGreen,
         info = InfoBlue,
         warning = WarningYellow,
-        alert = AlertOrange
+        alert = AlertOrange,
+        contentBackground = ContentWhite
     )
 }
 
@@ -59,7 +63,8 @@ fun KasKitaTheme(
             success = SuccessGreen,
             info = InfoBlue,
             warning = WarningYellow,
-            alert = AlertOrange
+            alert = AlertOrange,
+            contentBackground = ContentWhite
         )
     ) {
         MaterialTheme(
@@ -68,4 +73,18 @@ fun KasKitaTheme(
             content = content
         )
     }
+}
+
+object KasKitaTheme {
+    val colorScheme: ColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme
+
+    val extendedColors: ExtendedColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalExtendedColors.current
+
+
 }

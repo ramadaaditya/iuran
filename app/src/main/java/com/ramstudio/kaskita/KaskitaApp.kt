@@ -14,16 +14,23 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.ramstudio.kaskita.core.navigation.AppNavHost
 import com.ramstudio.kaskita.core.ui.KasKitaState
 import com.ramstudio.kaskita.core.ui.isRouteInHierarchy
+import com.ramstudio.kaskita.core.ui.theme.KasKitaTheme
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.presentation.onboarding.OnboardingScreen
 
@@ -52,7 +59,26 @@ fun KasKitaApp(
                 appState.topLevelDestinations.any { item -> dest.hasRoute(item.route) }
             } == true
 
+        val topLevelDestinations = appState.currentTopLevelDestination
         Scaffold(
+            containerColor = KasKitaTheme.extendedColors.contentBackground,
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+//                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground
+                    ),
+                    title = {
+                        Text(
+                            text = stringResource(
+                                id = topLevelDestinations?.titleTextId ?: R.string.app_name
+                            ),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                )
+            },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 AnimatedVisibility(

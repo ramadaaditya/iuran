@@ -33,3 +33,15 @@ fun formatDateTime(timestamp: Long): String {
     return SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         .format(Date(timestamp))
 }
+
+fun isValidPassword(password: String): Boolean {
+    val regex = Regex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}\$")
+    return regex.matches(password)
+}
+
+fun isValidEmail(email: String): Boolean {
+    val regex = Regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\$")
+    return regex.matches(email)
+}
+
+

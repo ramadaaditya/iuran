@@ -8,19 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,20 +21,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices.PIXEL_5
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ramstudio.kaskita.R
+import com.ramstudio.kaskita.core.ui.component.KasKitaButton
+import com.ramstudio.kaskita.core.ui.component.KasKitaTextField
+import com.ramstudio.kaskita.core.ui.component.PasswordField
 import com.ramstudio.kaskita.presentation.auth.register.LightGradient
+import com.ramstudio.kaskita.presentation.auth.register.PrimaryGreen
 
 val BgColor = Color(0xFFFBFCFD)
 val PrimaryGreen = Color(0xFF00BFA5)
@@ -107,134 +103,81 @@ fun SignInContent(
         ) {
             SignInHeader()
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+            KasKitaTextField(
+                label = stringResource(R.string.signin_email_label),
+                value = uiState.email,
+                onValueChange = onEmailChange,
+                placeholder = stringResource(R.string.signin_email_placeholder),
+                errorMessage = uiState.emailError
+            )
 
-            Column(horizontalAlignment = Alignment.Start) {
-                Text(
-                    text = stringResource(R.string.signin_email_label),
-                    color = TextDark,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = uiState.email,
-                    onValueChange = onEmailChange,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.signin_email_placeholder),
-                            color = TextGrey.copy(alpha = 0.7f)
-                        )
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = PrimaryGreen,
-                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
-                        focusedTextColor = TextDark,
-                        unfocusedTextColor = TextDark,
-                        cursorColor = PrimaryGreen
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
+            PasswordField(
+                value = uiState.password,
+                onValueChange = onPasswordChange,
+                label = stringResource(R.string.signin_password_label),
+                placeholder = stringResource(R.string.signin_password_placeholder),
+                errorMessage = uiState.passwordError
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Column(horizontalAlignment = Alignment.Start) {
-                Text(
-                    text = stringResource(R.string.signin_password_label),
-                    color = TextDark,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = uiState.password,
-                    onValueChange = onPasswordChange,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.signin_password_placeholder),
-                            color = TextGrey.copy(alpha = 0.7f)
-                        )
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = PrimaryGreen,
-                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f),
-                        focusedTextColor = TextDark,
-                        unfocusedTextColor = TextDark,
-                        cursorColor = PrimaryGreen
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Button(
+            KasKitaButton(
                 onClick = onSignInClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryGreen,
-                    disabledContainerColor = PrimaryGreen.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp), // Ketinggian tombol disamakan dengan field
-                enabled = !uiState.isLoading
-            ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.signin_button),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-            }
+                enabled = !uiState.isLoading &&
+                        uiState.email.isNotBlank() &&
+                        uiState.password.isNotBlank(),
+                isLoading = uiState.isLoading,
+                label = stringResource(R.string.signin_button)
+            )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            SignUpText(navigateSignUp = navigateSignUp)
 
-            TextButton(onClick = navigateSignUp) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                fontWeight = FontWeight.Normal,
-                                color = TextGrey
-                            )
-                        ) {
-                            append(stringResource(R.string.signin_no_account_prefix))
-                        }
-
-                        withStyle(
-                            style = SpanStyle(
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryGreen
-                            )
-                        ) {
-                            append(stringResource(R.string.signin_no_account_action))
-                        }
-                    }
-                )
-            }
         }
     }
+}
+
+
+@Composable
+fun SignUpText(
+    navigateSignUp: () -> Unit
+) {
+    val annotatedText = buildAnnotatedString {
+        append(stringResource(R.string.signin_no_account_prefix))
+
+        append(" ")
+
+        pushStringAnnotation(
+            tag = "SIGN_UP",
+            annotation = "sign_up"
+        )
+
+        withStyle(
+            style = SpanStyle(
+                fontWeight = FontWeight.Bold,
+                color = PrimaryGreen
+            )
+        ) {
+            append(stringResource(R.string.signin_no_account_action))
+        }
+
+        pop()
+    }
+
+    ClickableText(
+        text = annotatedText,
+        onClick = { offset ->
+            annotatedText.getStringAnnotations(
+                tag = "SIGN_UP",
+                start = offset,
+                end = offset
+            ).firstOrNull()?.let {
+                navigateSignUp()
+            }
+        }
+    )
 }
 
 @Composable

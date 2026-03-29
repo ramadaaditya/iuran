@@ -34,7 +34,6 @@ import com.ramstudio.kaskita.presentation.auth.register.TextGrey
 @Composable
 fun JoinCommunityDialog(
     isLoading: Boolean = false,
-    errorMessage: String? = null,
     onDismiss: () -> Unit,
     onJoin: (inviteCode: String) -> Unit
 ) {
@@ -69,7 +68,6 @@ fun JoinCommunityDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
-                    isError = errorMessage != null,
                     enabled = !isLoading,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PrimaryGreen,
@@ -81,14 +79,14 @@ fun JoinCommunityDialog(
                 )
 
                 // Menampilkan error message jika gagal validasi dari API/ViewModel
-                if (errorMessage != null) {
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                    )
-                }
+//                if (errorMessage != null) {
+//                    Text(
+//                        text = errorMessage,
+//                        color = MaterialTheme.colorScheme.error,
+//                        style = MaterialTheme.typography.bodySmall,
+//                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+//                    )
+//                }
             }
         },
         confirmButton = {

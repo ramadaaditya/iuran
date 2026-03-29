@@ -9,8 +9,8 @@
     </style>
 
     <style name="Theme.App.Starting.Splash" parent="Theme.App.Starting">
-<!--        <item name="windowSplashScreenAnimatedIcon">@drawable/logos</item>-->
-        <item name="windowSplashScreenBackground">@color/black</item>
+<!--        <item name="windowSplashScreenAnimatedIcon">@drawable/newlogo</item>-->
+        <item name="windowSplashScreenBackground">@color/white</item>
         <item name="postSplashScreenTheme">@style/Theme.KasKita</item>
         <item name="android:windowBackground">@drawable/splashscreen</item>
     </style>

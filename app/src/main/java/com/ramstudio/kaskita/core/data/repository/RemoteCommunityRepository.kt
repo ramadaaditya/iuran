@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,15 +25,24 @@ class RemoteCommunityRepository @Inject constructor(
     private val auth: Auth
 ) : CommunityRepository {
 
+
     override suspend fun createCommunity(
         name: String,
         desc: String
     ): Result<String> {
         return try {
+            Timber.d("🚀 createCommunity() called with name=%s", name)
+
             val user = auth.currentUserOrNull()
-                ?: return Result.Error("User belum login")
+            if (user == null) {
+                Timber.w("❗ User belum login")
+                return Result.Error("User belum login")
+            }
+
+            Timber.d("👤 User ID: %s", user.id)
 
             val uniqueCode = (1..6).map { ('A'..'Z').random() }.joinToString("")
+            Timber.d("🔑 Generated uniqueCode: %s", uniqueCode)
 
             val rpcParams = buildJsonObject {
                 put("name_input", name)
@@ -40,14 +50,23 @@ class RemoteCommunityRepository @Inject constructor(
                 put("code_input", uniqueCode)
             }
 
+            Timber.d("📦 RPC Params: %s", rpcParams.toString())
+
             val response = postgrest.rpc(
                 function = "create_community_with_admin",
                 parameters = rpcParams
-            ).decodeSingle<JoinResponse>()
+            ).decodeAs<JoinResponse>()
+
+            Timber.d("📡 RPC Response: success=%s, message=%s", response.success, response.message)
 
             if (response.success) {
-                Result.Success("Komunitas $name berhasil dibuat! Kode: $uniqueCode")
+                val successMessage = "Komunitas $name berhasil dibuat! Kode: $uniqueCode"
+                Timber.i("✅ Success: %s", successMessage)
+
+                Result.Success(successMessage)
             } else {
+                Timber.e("❌ API Error: %s", response.message)
+
                 Result.Error(
                     AppErrorMapper.fromRawMessage(
                         rawMessage = response.message,
@@ -57,6 +76,8 @@ class RemoteCommunityRepository @Inject constructor(
             }
 
         } catch (e: Exception) {
+            Timber.e(e, "💥 Exception saat createCommunity")
+
             Result.Error(
                 AppErrorMapper.fromThrowable(
                     throwable = e,

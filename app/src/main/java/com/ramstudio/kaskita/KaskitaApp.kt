@@ -23,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -63,21 +62,28 @@ fun KasKitaApp(
         Scaffold(
             containerColor = KasKitaTheme.extendedColors.contentBackground,
             topBar = {
-                TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(
+                AnimatedVisibility(
+                    visible = showBottomNav,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
 //                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    title = {
-                        Text(
-                            text = stringResource(
-                                id = topLevelDestinations?.titleTextId ?: R.string.app_name
-                            ),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                )
+                            titleContentColor = MaterialTheme.colorScheme.onBackground
+                        ),
+                        title = {
+                            Text(
+                                text = stringResource(
+                                    id = topLevelDestinations?.titleTextId ?: R.string.app_name
+                                ),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    )
+                }
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {

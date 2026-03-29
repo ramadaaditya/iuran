@@ -12,13 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -39,6 +36,7 @@ import com.ramstudio.kaskita.core.ui.component.KasKitaButton
 import com.ramstudio.kaskita.core.ui.component.KasKitaTextField
 import com.ramstudio.kaskita.core.ui.component.PasswordField
 import com.ramstudio.kaskita.core.ui.theme.KasKitaTheme
+import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 
 val BgColor = Color(0xFFFBFCFD)
 val PrimaryGreen = Color(0xFF00BFA5)
@@ -52,7 +50,7 @@ fun SignUpScreen(
     viewModel: SignUpViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalAppSnackbarHostState.current
 
     LaunchedEffect(viewModel.uiEvent) {
         viewModel.uiEvent.collect { event ->
@@ -64,7 +62,6 @@ fun SignUpScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = BgColor
     ) { paddingValues ->
         SignUpContent(

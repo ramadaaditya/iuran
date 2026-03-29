@@ -38,8 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -52,6 +50,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,9 +81,11 @@ import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.ui.theme.ErrorRed
 import com.ramstudio.kaskita.core.ui.theme.SuccessGreen
 import com.ramstudio.kaskita.core.ui.theme.WarningYellow
+import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.core.utils.formatCurrency
 import com.ramstudio.kaskita.core.utils.formatRupiahTransaction
 import com.ramstudio.kaskita.core.utils.formatTime
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private val FinanceBlue = Color(0xFF1D4ED8)
@@ -159,16 +160,9 @@ private fun CommunityDetailContent(
 ) {
     var selectedTab by remember { mutableStateOf(CommunityTab.TRANSACTIONS) }
     val clipboardManager = LocalClipboardManager.current
-    var showCopiedSnackbar by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalAppSnackbarHostState.current
+    val scope = rememberCoroutineScope()
     val resolvedMembersCount = maxOf(community.membersCount, members.size)
-
-//    LaunchedEffect(showCopiedSnackbar) {
-//        if (showCopiedSnackbar) {
-//            snackbarHostState.showSnackbar(stringResource(R.string.detail_community_invite_copied))
-//            showCopiedSnackbar = false
-//        }
-//    }
 
     Scaffold(
         topBar = {
@@ -223,7 +217,6 @@ private fun CommunityDetailContent(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
     ) { paddingValues ->
@@ -240,7 +233,12 @@ private fun CommunityDetailContent(
                     isAdmin = isAdmin,
                     onCopyCodeClick = {
                         clipboardManager.setText(AnnotatedString(community.code))
-                        showCopiedSnackbar = true
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Berhasil menyalin kode"
+//                                message = stringResource(R.string.detail_community_invite_copied)
+                            )
+                        }
                     },
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
                 )

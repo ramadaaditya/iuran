@@ -42,9 +42,9 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,8 +69,10 @@ import com.ramstudio.kaskita.core.domain.model.Community
 import com.ramstudio.kaskita.core.navigation.ScreenRoute
 import com.ramstudio.kaskita.core.ui.component.EmptyStateAction
 import com.ramstudio.kaskita.core.ui.component.EmptyStateView
+import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.presentation.dashboard.component.CreateCommunityDialog
 import com.ramstudio.kaskita.presentation.dashboard.component.JoinCommunityDialog
+import timber.log.Timber
 
 fun NavController.navigateToCommunity(navOptions: NavOptions? = null) =
     if (navOptions != null) navigate(route = ScreenRoute.Community, navOptions)
@@ -91,28 +93,29 @@ fun CommunityScreen(
     var showJoinDialog by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showActionFab by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalAppSnackbarHostState.current
 
-//    LaunchedEffect(Unit) {
-//        viewModel.uiEvent.collect { event ->
-//            when (event) {
-//                is CommunityEvent.ShowError -> {
-//                    snackbarHostState.showSnackbar(event.message)
-//                }
-//
-//                is CommunityEvent.ShowSuccess -> {
-//                    showCreateDialog = false
-//                    showJoinDialog = false
-//                    snackbarHostState.showSnackbar(event.message)
-//                }
-//            }
-//        }
-//    }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is CommunityEvent.ShowError -> {
+                    Timber.d("Error: ${event.message}")
+                    snackbarHostState.showSnackbar(event.message)
+                }
+
+                is CommunityEvent.ShowSuccess -> {
+                    Timber.d("Success: ${event.message}")
+                    showCreateDialog = false
+                    showJoinDialog = false
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
     ) {
         CommunityContent(
             uiState = uiState,

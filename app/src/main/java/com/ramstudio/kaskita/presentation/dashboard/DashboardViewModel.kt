@@ -98,10 +98,6 @@ class DashboardViewModel @Inject constructor(
             val activeCommunity = community.find { it.id == communityId }
                 ?: community.firstOrNull()
 
-            if (activeCommunity?.id != communityId) {
-                _selectedCommunityId.value = activeCommunity?.id
-            }
-
             val isAdmin = activeCommunity?.createdBy != null &&
                     activeCommunity.createdBy == user?.id
 
@@ -152,7 +148,6 @@ class DashboardViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = DashboardUiState()
         )
-
 
     fun setSelectedCommunityId(communityId: String?) {
         _selectedCommunityId.value = communityId?.takeIf { it.isNotBlank() }

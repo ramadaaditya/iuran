@@ -33,6 +33,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,7 +70,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.NavOptions
 import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.domain.model.Community
 import com.ramstudio.kaskita.core.domain.model.CommunityTab
@@ -95,9 +95,9 @@ private val FinanceBlueBright = Color(0xFF38BDF8)
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
 
-fun NavController.navigateToDetailCommunity(communityId: String, navOptions: NavOptions? = null) =
-    if (navOptions != null) navigate(route = ScreenRoute.DetailCommunity, navOptions)
-    else navigate(ScreenRoute.DetailCommunity)
+fun NavController.navigateToDetailCommunity(communityId: String) {
+    navigate(ScreenRoute.DetailCommunity(communityId))
+}
 
 // ── Screen entry-point ────────────────────────────────────────────────────────
 
@@ -202,18 +202,18 @@ private fun CommunityDetailContent(
         },
         floatingActionButton = {
             if (selectedTab == CommunityTab.TRANSACTIONS) {
-                ExtendedFloatingActionButton(
+                FloatingActionButton(
                     onClick = onAddTransactionClick,
                     containerColor = FinanceBlue,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        stringResource(R.string.detail_community_add_transaction),
-                        fontWeight = FontWeight.Bold
-                    )
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Text(
+//                        stringResource(R.string.detail_community_add_transaction),
+//                        fontWeight = FontWeight.Bold
+//                    )
                 }
             }
         },

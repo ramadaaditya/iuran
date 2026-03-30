@@ -17,9 +17,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 @Singleton
 class TransactionRemoteDataSourceImpl @Inject constructor(
@@ -217,10 +220,16 @@ class TransactionRemoteDataSourceImpl @Inject constructor(
             val bucket = supabaseClient.storage.from(PROOF_BUCKET)
             bucket.upload(path = objectPath, uri = uri)
 
-            val publicUrl = bucket.publicUrl(objectPath)
+            // ✅ Ganti publicUrl → createSignedUrl
+            // Signed URL menyertakan token auth baked-in, tidak butuh session aktif saat diakses
+            val signedUrl = bucket.createSignedUrl(
+                path = objectPath,
+                expiresIn = 365.days
+            )
 
-            Result.Success(publicUrl)
+            Result.Success(signedUrl)
         } catch (e: Exception) {
+            Timber.tag("TransactionRepo").e(e, "uploadTransactionProof failed: ${e.message}")
             Result.Error(e)
         }
     }

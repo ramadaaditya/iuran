@@ -14,6 +14,7 @@ import com.ramstudio.kaskita.presentation.dashboard.DashboardRouteScreen
 import com.ramstudio.kaskita.presentation.detailCommunity.CommunityDetailScreen
 import com.ramstudio.kaskita.presentation.detailCommunity.navigateToDetailCommunity
 import com.ramstudio.kaskita.presentation.detailTransaction.TransactionDetailsScreen
+import com.ramstudio.kaskita.presentation.detailTransaction.navigateToDetailTransaction
 import com.ramstudio.kaskita.presentation.settings.SettingsScreen
 import com.ramstudio.kaskita.presentation.transaction.AddTransactionScreen
 import com.ramstudio.kaskita.presentation.transaction.TransactionScreen
@@ -30,8 +31,7 @@ fun AppNavHost(
     val navController = appState.navController
 
     when (authState) {
-        AuthState.Loading -> {
-        }
+        AuthState.Loading -> {}
 
         AuthState.LoggedIn -> {
             NavHost(
@@ -42,7 +42,7 @@ fun AppNavHost(
                     DashboardRouteScreen(
                         innerPadding = innerPadding,
                         onTransactionClick = { id ->
-                            navController.navigate(ScreenRoute.DetailTransaction(id))
+                            navController.navigateToDetailTransaction(id)
                         },
                         onViewAllTransactionsClick = {
                             navController.navigateToTransactions()
@@ -64,7 +64,7 @@ fun AppNavHost(
                     TransactionScreen(
                         innerPadding = innerPadding,
                         onDetailClick = { transactionId ->
-                            navController.navigate(ScreenRoute.DetailTransaction(transactionId))
+                            navController.navigateToDetailTransaction(transactionId)
                         },
                         communityId = selectedCommunityId ?: "",
                         onAddTransactionClick = { isAdmin ->

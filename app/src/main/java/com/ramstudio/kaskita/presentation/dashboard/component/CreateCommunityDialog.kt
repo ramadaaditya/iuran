@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ fun CreateCommunityDialog(
     isLoading: Boolean,
     onDismiss: () -> Unit,
     onCreate: (String, String) -> Unit,
+    errorMessage: String? = null,
 ) {
 
     var name by remember { mutableStateOf("") }
@@ -73,14 +75,14 @@ fun CreateCommunityDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-//                if (errorMessage != null) {
-//                    Spacer(modifier = Modifier.height(8.dp))
-//                    Text(
-//                        text = errorMessage,
-//                        color = Color.Red,
-//                        style = MaterialTheme.typography.bodySmall
-//                    )
-//                }
+                if (!errorMessage.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
     )

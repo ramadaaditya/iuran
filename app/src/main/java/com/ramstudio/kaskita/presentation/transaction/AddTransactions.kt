@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -59,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,7 +71,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.util.Log
 import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.domain.model.TransactionCategory
 import com.ramstudio.kaskita.core.ui.theme.ErrorRed
@@ -173,6 +178,7 @@ fun AddTransactionContent(
         label = "accentColor"
     )
 
+    val context = LocalContext.current
     var showImagePreview by remember { mutableStateOf(false) }
 
     val isFormValid = amount.isNotBlank() && amount.toDoubleOrNull() != null
@@ -289,8 +295,19 @@ fun AddTransactionContent(
                 // ── Thumbnail preview setelah receipt dipilih ─────────────────
                 if (hasReceiptAttached && !receiptUri.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
+                    val thumbnailRequest = remember(receiptUri, context) {
+                        ImageRequest.Builder(context)
+                            .data(receiptUri)
+                            .crossfade(true)
+                            .listener(
+                                onError = { _, result ->
+                                    Log.e("ReceiptImage", "Thumbnail load failed", result.throwable)
+                                }
+                            )
+                            .build()
+                    }
                     SubcomposeAsyncImage(
-                        model = receiptUri,
+                        model = thumbnailRequest,
                         contentDescription = stringResource(R.string.detail_transaction_evidence_cd),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -305,6 +322,21 @@ fun AddTransactionContent(
                                     .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+                        },
+                        error = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Image,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
                         }
                     )
                 }
@@ -327,14 +359,32 @@ fun AddTransactionContent(
                     .clickable { showImagePreview = false },
                 contentAlignment = Alignment.Center
             ) {
+                val fullPreviewRequest = remember(receiptUri, context) {
+                    ImageRequest.Builder(context)
+                        .data(receiptUri)
+                        .crossfade(true)
+                        .listener(
+                            onError = { _, result ->
+                                Log.e("ReceiptImage", "Full preview load failed", result.throwable)
+                            }
+                        )
+                        .build()
+                }
                 SubcomposeAsyncImage(
-                    model = receiptUri,
+                    model = fullPreviewRequest,
                     contentDescription = stringResource(R.string.detail_transaction_full_preview_cd),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     contentScale = ContentScale.Fit,
-                    loading = { CircularProgressIndicator(color = Color.White) }
+                    loading = { CircularProgressIndicator(color = Color.White) },
+                    error = {
+                        Text(
+                            text = stringResource(R.string.detail_transaction_failed_load_image),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 )
                 IconButton(
                     onClick = { showImagePreview = false },

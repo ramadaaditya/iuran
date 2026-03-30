@@ -35,7 +35,8 @@ import com.ramstudio.kaskita.presentation.auth.register.TextGrey
 fun JoinCommunityDialog(
     isLoading: Boolean = false,
     onDismiss: () -> Unit,
-    onJoin: (inviteCode: String) -> Unit
+    onJoin: (inviteCode: String) -> Unit,
+    errorMessage: String? = null
 ) {
     // Menyimpan state input dari user
     var inviteCode by remember { mutableStateOf("") }
@@ -78,15 +79,14 @@ fun JoinCommunityDialog(
                     )
                 )
 
-                // Menampilkan error message jika gagal validasi dari API/ViewModel
-//                if (errorMessage != null) {
-//                    Text(
-//                        text = errorMessage,
-//                        color = MaterialTheme.colorScheme.error,
-//                        style = MaterialTheme.typography.bodySmall,
-//                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-//                    )
-//                }
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
         },
         confirmButton = {

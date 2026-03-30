@@ -93,6 +93,8 @@ fun CommunityScreen(
     var showJoinDialog by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showActionFab by remember { mutableStateOf(false) }
+    var createCommunityError by remember { mutableStateOf<String?>(null) }
+    var joinCommunityError by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = LocalAppSnackbarHostState.current
 
     LaunchedEffect(Unit) {
@@ -100,13 +102,19 @@ fun CommunityScreen(
             when (event) {
                 is CommunityEvent.ShowError -> {
                     Timber.d("Error: ${event.message}")
-                    snackbarHostState.showSnackbar(event.message)
+                    when {
+                        showCreateDialog -> createCommunityError = event.message
+                        showJoinDialog -> joinCommunityError = event.message
+                        else -> snackbarHostState.showSnackbar(event.message)
+                    }
                 }
 
                 is CommunityEvent.ShowSuccess -> {
                     Timber.d("Success: ${event.message}")
                     showCreateDialog = false
                     showJoinDialog = false
+                    createCommunityError = null
+                    joinCommunityError = null
                     snackbarHostState.showSnackbar(event.message)
                 }
             }
@@ -128,10 +136,12 @@ fun CommunityScreen(
             onToggleExpanded = { showActionFab = !showActionFab },
             onJoinClick = {
                 showActionFab = false
+                joinCommunityError = null
                 showJoinDialog = true
             },
             onCreateClick = {
                 showActionFab = false
+                createCommunityError = null
                 showCreateDialog = true
             },
             modifier = Modifier
@@ -143,9 +153,11 @@ fun CommunityScreen(
             CreateCommunityDialog(
                 onDismiss = {
                     showCreateDialog = false
+                    createCommunityError = null
                 },
                 isLoading = uiState.isActionLoading,
                 onCreate = { name, desc -> viewModel.createCommunity(name, desc) },
+                errorMessage = createCommunityError,
             )
         }
 
@@ -154,8 +166,10 @@ fun CommunityScreen(
                 isLoading = uiState.isActionLoading,
                 onDismiss = {
                     showJoinDialog = false
+                    joinCommunityError = null
                 },
-                onJoin = { code -> viewModel.joinCommunity(code) }
+                onJoin = { code -> viewModel.joinCommunity(code) },
+                errorMessage = joinCommunityError
             )
         }
     }
@@ -202,8 +216,8 @@ private fun CommunityMainContent(
         modifier = modifier
             .fillMaxSize()
             .padding(innerPadding),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (communities.isEmpty()) {
             item {

@@ -1,5 +1,6 @@
 package com.ramstudio.kaskita.presentation.detailTransaction
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +68,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.ramstudio.kaskita.R
 import com.ramstudio.kaskita.core.domain.model.IconBgGreen
 import com.ramstudio.kaskita.core.domain.model.TransactionCategory
@@ -78,8 +82,8 @@ import com.ramstudio.kaskita.core.ui.theme.White
 import com.ramstudio.kaskita.core.utils.AvatarUtils
 import com.ramstudio.kaskita.core.utils.LocalAppSnackbarHostState
 import com.ramstudio.kaskita.presentation.transaction.TransactionStatusChip
+import timber.log.Timber
 
-@Suppress("unused")
 fun NavController.navigateToDetailTransaction(id: String) {
     navigate(ScreenRoute.DetailTransaction(id))
 }
@@ -157,7 +161,6 @@ fun TransactionDetailsScreen(
     }
 }
 
-// ── Main content ──────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -248,6 +251,7 @@ fun TransactionDetailsContent(
                 proofUrl = transaction.proofUrl,
                 onImageClick = { showEvidencePreview = true }
             )
+            Timber.d("Image proof url: ${transaction.proofUrl}")
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -455,6 +459,7 @@ private fun EvidenceSection(
     proofUrl: String?,
     onImageClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.detail_transaction_evidence),
@@ -489,8 +494,19 @@ private fun EvidenceSection(
                 }
             }
         } else {
+            val proofRequest = remember(proofUrl, context) {
+                ImageRequest.Builder(context)
+                    .data(proofUrl)
+                    .crossfade(true)
+                    .listener(
+                        onError = { _, result ->
+                            Log.e("EvidenceImage", "Load failed", result.throwable)
+                        }
+                    )
+                    .build()
+            }
             SubcomposeAsyncImage(
-                model = proofUrl,
+                model = proofRequest,
                 contentDescription = stringResource(R.string.detail_transaction_evidence_cd),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -541,6 +557,7 @@ private fun FullScreenEvidencePreview(
     imageUrl: String,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -548,8 +565,19 @@ private fun FullScreenEvidencePreview(
             .clickable { onClose() },
         contentAlignment = Alignment.Center
     ) {
+        val fullPreviewRequest = remember(imageUrl, context) {
+            ImageRequest.Builder(context)
+                .data(imageUrl)
+                .crossfade(true)
+                .listener(
+                    onError = { _, result ->
+                        Log.e("EvidenceImage", "Full preview load failed", result.throwable)
+                    }
+                )
+                .build()
+        }
         SubcomposeAsyncImage(
-            model = imageUrl,
+            model = fullPreviewRequest,
             contentDescription = stringResource(R.string.detail_transaction_full_preview_cd),
             modifier = Modifier
                 .fillMaxWidth()

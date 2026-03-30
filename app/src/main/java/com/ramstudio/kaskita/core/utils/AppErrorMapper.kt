@@ -42,6 +42,20 @@ object AppErrorMapper {
                 lower.contains("already exists") ->
                 "Akun sudah terdaftar. Silakan gunakan email lain."
 
+            lower.contains("communities_name_key") ||
+                lower.contains("community_name_key") ||
+                lower.contains("community_name") ||
+                (lower.contains("duplicate key") && lower.contains("name")) ||
+                lower.contains("name_input") ->
+                "Nama grup sudah digunakan."
+
+            lower.contains("communities_code_key") ||
+                lower.contains("community_code_key") ||
+                lower.contains("community_code") ||
+                (lower.contains("duplicate key") && lower.contains("code")) ||
+                lower.contains("code_input") ->
+                "Kode unik sudah digunakan."
+
             lower.contains("network") ||
                 lower.contains("timeout") ||
                 lower.contains("connection") ||

@@ -40,9 +40,8 @@ When you are ready, put screenshots in `docs/screenshots/` and update the image 
 - **Dependency Injection:** Hilt
 - **Remote Backend:** Supabase (Auth, PostgREST, RPC)
 - **Local Storage:** Room
-- **Networking:** Ktor (via Supabase Kotlin SDK)
 - **Image Loading:** Coil
-- **Analytics:** Firebase Analytics
+- **Logging:** Timber
 
 ## Project Structure
 
